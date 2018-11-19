@@ -1,5 +1,5 @@
 # KIWISC3
-A Bash code to link Seiscomp3 and KIWI tools for automatic (Online) source analysis.
+A Bash code to link Seiscomp3 to KIWI tools for automatic (Online) source analysis.
 
 # Requirements
 
