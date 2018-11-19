@@ -1,0 +1,144 @@
+#!/bin/bash
+
+################ DIRECTORIES
+SC3_HOME="/home/kiwi/seiscomp3"
+KIWI_HOME="$SC3_HOME/KIWISC3"
+RESP="$KIWI_HOME/RESP"
+DATA="$SC3_HOME/data"
+DECO="$KIWI_HOME/PYROCKO/DECO.py"
+
+################ CONFIG
+HOST=192.168.127.68    # SC3 Host address
+LAT_BORDER1=23.0       # Lat limit 1
+LAT_BORDER2=42.0	   # Lat limit 2
+LON_BORDER1=43.0	   # lon limit 1
+LON_BORDER2=62.0	   # lon limit 2
+MAGLIM=3.5			   # Magnitude limit
+TIME1=15			   # End time 
+TIME2=75			   # Start time 
+	
+
+
+GET_EVE_INFO ()
+{
+	# Get all eventIDs within the given time range from $HOST host
+	read -a EVEIDS <<< `seiscomp exec scevtls -d mysql://sysop:sysop@"$HOST"/seiscomp3 --begin "$T2" --end "$T1"`
+	[ -z ${EVEIDS[0]} ] && echo -e "Time Range = $T2 to $T1\nNo. Events = 0\nSleeping! ..." && continue
+	
+	for EVID in "${EVEIDS[@]}"; do
+		echo "EventID : $EVID"
+		# Get the EQ information for eventID $EVID
+		seiscomp exec scbulletin -E $EVID -3 -d mysql://sysop:sysop@"$HOST"/seiscomp3 > .EVE_INFO.txt
+		
+		
+		EVEMAG=`grep -w "preferred" .EVE_INFO.txt | awk '{print $2}'`
+		EVELA=`grep -w "Latitude" .EVE_INFO.txt | awk '{print $2}'`
+		EVELO=`grep -w "Longitude" .EVE_INFO.txt | awk '{print $2}'`		
+		
+		# Event limits to be considered
+		C1=`echo "$EVELA >= $LAT_BORDER1" | bc -l`
+		C2=`echo "$EVELA <= $LAT_BORDER2" | bc -l`
+		C3=`echo "$EVELO >= $LON_BORDER1" | bc -l`
+		C4=`echo "$EVELO <= $LON_BORDER2" | bc -l`
+		C5=$(( `echo "$EVEMAG >= $MAGLIM" | bc -l` ))
+		
+		if [ "$C1" -eq "1" ] && [ "$C2" -eq "1" ] && [ "$C3" -eq "1" ] && [ "$C4" -eq "1" ] && [ "$C5" -eq "1" ]; then
+			notify-send -t 5000 "Program Started Processing. EventID is << $EVID >>"
+			echo "Processing EventID ~~~ $EVID ~~~"
+			
+			EVE_DTE=`grep -w "Date" .EVE_INFO.txt | awk '{print $2}'`
+			EVE_TME=`grep -w "Time" .EVE_INFO.txt | awk '{print $2}'`
+			EVE_DEP=`grep -w "Depth" .EVE_INFO.txt | awk '{print $2}'`
+			EVE_RMS=`grep -w "Residual RMS" .EVE_INFO.txt | awk '{print $3}'`
+			EVE_GAP=`grep -w "Azimuthal gap" .EVE_INFO.txt | awk '{print $3}'`
+			EVMAG_T=`grep -w "preferred" .EVE_INFO.txt | awk '{print $1}'`
+		
+			YEAR=${EVE_DTE%%-*}
+			JD=`date -d "$EVE_DTE" +%j`
+			
+			# Select the waveform length considering the event magnitude
+			if (( `echo "$EVEMAG < 4.00" | bc -l` )); then
+				TINC=350 
+			elif (( `echo "$EVEMAG >= 4.00" | bc -l` )) && (( `echo "$MAG < 5.00" | bc -l` )); then
+				TINC=450 
+			elif (( `echo "$EVEMAG >= 5.00" | bc -l` )) && (( `echo "$MAG < 6.00" | bc -l` )); then		
+				TINC=650
+			elif (( `echo "$EVEMAG >= 6.00" | bc -l` )) && (( `echo "$MAG < 7.00" | bc -l` )); then		
+				TINC=850 
+			elif (( `echo "$EVEMAG >= 7.00" | bc -l` )) && (( `echo "$MAG < 7.50" | bc -l` )); then		
+				TINC=1200 
+			fi
+			
+			echo "The Length of All Data Will be $TINC Seconds"
+			
+			DATA_PATH="DATA/$EVE_DTE-$EVE_TME-$EVELA-$EVELO-$EVE_DEP-$EVEMAG"
+			
+			# Select the proper Sampling Rate based on GFDB
+			SW1=`echo "$EVELA >= 27.6" | bc -l`
+			SW2=`echo "$EVELA <= 32.0" | bc -l`
+			SW3=`echo "$EVELO >= 47.0" | bc -l`
+			SW4=`echo "$EVELO <= 53.0" | bc -l`
+	
+			TH1=`echo "$EVELA >= 34.5" | bc -l`
+			TH2=`echo "$EVELA <= 37.0" | bc -l`
+			TH3=`echo "$EVELO >= 49.5" | bc -l`
+			TH4=`echo "$EVELO <= 53.5" | bc -l`
+	
+			if [ "$SW1" -eq "1" ] && [ "$SW2" -eq "1" ] && [ "$SW3" -eq "1" ] && [ "$SW4" -eq "1" ]; then
+				DEC=2
+				sed -i "/pre_filt =/c\pre_filt = (0.005, 0.007, 0.8, 0.9)" $DECO  2> /dev/null
+			elif [ "$TH1" -eq "1" ] && [ "$TH2" -eq "1" ] && [ "$TH3" -eq "1" ] && [ "$TH4" -eq "1" ]; then
+				DEC=10
+				sed -i "/pre_filt =/c\pre_filt = (0.005, 0.007, 5, 6)" $DECO  2> /dev/null
+			else
+				DEC=2
+				sed -i "/pre_filt =/c\pre_filt = (0.005, 0.007, 0.8, 0.9)" $DECO  2> /dev/null		
+			fi
+			echo "All data will Decimate to $DEC SPS.\n"	
+								
+			TMAX=`date -d "$EVE_DTE $EVE_TME $TINC seconds" "+%Y-%m-%d %H:%M:%S"`
+			[ -d "$DATA_PATH" ] && rm -rf "$DATA_PATH"
+			
+			# JACKSEIS, Extract and Decimate the Data
+			find $DATA/"$YEAR"/ -type f -name "*$YEAR.$JD" | xargs jackseis --tmin="$EVE_DTE $EVE_TME" \
+			--tmax="$TMAX" --downsample="$DEC" --output-dir="$DATA_PATH" --output=DISPL.%n.%s.%l.%c 
+			
+			mkdir $DATA_PATH/DISP 2> /dev/null
+			
+			# Deconvolution process
+			echo "\nProgram started Deconvolution Process."
+			for data in `ls $DATA_PATH/DISPL*`; do
+				Data=`echo $data | cut -f 3 -d "/"`  # Data name
+				resp=`ls RESP/RESP."${Data#*.}"`     # Select the response file
+				[ -z $resp ] && echo "No Metadata Available for $Data" && continue
+				sed -i "/respf =/c\respf = \'$resp\'" $DECO  2> /dev/null
+				sed -i "/st = obspy/c\st = obspy.read (\'$data\')" $DECO  2> /dev/null
+				sed -i "/tr.write/c\tr.write (\"$DATA_PATH/DISP/$Data.mseed\", format='MSEED')" $DECO  2> /dev/null
+				python $DECO 2> /dev/null
+			done	
+			echo "Deconvolution Process Finished."
+			
+			for data in `ls $DATA_PATH/DISP/*`; do
+				mv $data ${data%.*}
+			done	
+			echo "$EVID Data is Ready to be Processed."
+			echo "${DATA_PATH##*/}" >> .ready_data
+			
+		else
+			echo -e "$EVID Is Out of Our Terms. Skipped ..."
+		fi
+	done
+	echo -e "\n"
+}	
+
+
+while true; do
+
+	T1=`date -u --date="$TIME1 minutes ago" "+%Y-%m-%d %H:%M:%S"`
+	T2=`date -u --date="$TIME2 minutes ago" "+%Y-%m-%d %H:%M:%S"`
+	TN=`date -u "+%Y-%m-%d %H:%M:%S"`
+	echo -e "Program Started Processing at **** $TN **** \n"
+	GET_EVE_INFO & sleep 3600
+	
+done			
+			
