@@ -19,4 +19,4 @@ Create these directories in the KIWISC3 main directory:
 
 - You may need to alter the code (Source_Analysis lines 28 - 48) to define your own GFDB's in specific conditions.
 
-- Response files must be stored in RESP.$NET.$STA..$CHAN name format.
+- Response files must be stored in RESP.$NET.$STA.$LOC.$CHAN name format.
