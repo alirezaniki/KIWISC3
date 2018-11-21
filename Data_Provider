@@ -3,19 +3,20 @@
 ################ DIRECTORIES
 SC3_HOME="/home/kiwi/seiscomp3"
 KIWI_HOME="$SC3_HOME/KIWISC3"
+PYROCKO="$KIWI_HOME/PYROCKO"
 RESP="$KIWI_HOME/RESP"
 DATA="$SC3_HOME/data"
 DECO="$KIWI_HOME/PYROCKO/DECO.py"
 
 ################ CONFIG
 HOST=192.168.127.68    # SC3 Host address
-LAT_BORDER1=23.0       # Lat limit 1
-LAT_BORDER2=42.0	   # Lat limit 2
+LAT_BORDER1=24.0       # Lat limit 1
+LAT_BORDER2=41.0	   # Lat limit 2
 LON_BORDER1=43.0	   # lon limit 1
-LON_BORDER2=62.0	   # lon limit 2
+LON_BORDER2=63.0	   # lon limit 2
 MAGLIM=3.5			   # Magnitude limit
-TIME1=15			   # End time 
-TIME2=75			   # Start time 
+TIME1=20			   # End time 
+TIME2=1000			   # Start time 
 	
 
 
@@ -44,7 +45,7 @@ GET_EVE_INFO ()
 		
 		if [ "$C1" -eq "1" ] && [ "$C2" -eq "1" ] && [ "$C3" -eq "1" ] && [ "$C4" -eq "1" ] && [ "$C5" -eq "1" ]; then
 			notify-send -t 5000 "Program Started Processing. EventID is << $EVID >>"
-			echo "Processing EventID ~~~ $EVID ~~~"
+			echo -e "Processing EventID #~~~ $EVID ~~~#"
 			
 			EVE_DTE=`grep -w "Date" .EVE_INFO.txt | awk '{print $2}'`
 			EVE_TME=`grep -w "Time" .EVE_INFO.txt | awk '{print $2}'`
@@ -56,20 +57,56 @@ GET_EVE_INFO ()
 			YEAR=${EVE_DTE%%-*}
 			JD=`date -d "$EVE_DTE" +%j`
 			
+			if (( `echo "$EVEMAG < 4.00" | bc -l` )); then
+				MAX_DIS=400
+			elif (( `echo "$EVEMAG >= 4.00" | bc -l` )) && (( `echo "$EVEMAG < 4.60" | bc -l` )) ; then					
+				MAX_DIS=550
+			elif (( `echo "$EVEMAG >= 4.60" | bc -l` )) && (( `echo "$EVEMAG < 5.00" | bc -l` )) ; then							
+				MAX_DIS=650
+			elif (( `echo "$EVEMAG >= 5.00" | bc -l` )) && (( `echo "$EVEMAG < 5.60" | bc -l` )) ; then							
+				MAX_DIS=800
+			elif (( `echo "$EVEMAG >= 5.60" | bc -l` )) && (( `echo "$EVEMAG < 6.00" | bc -l` )) ; then							
+				MAX_DIS=1100
+			elif (( `echo "$EVEMAG >= 6.00" | bc -l` )) && (( `echo "$EVEMAG < 7.00" | bc -l` )) ; then						
+				MAX_DIS=1500
+			else
+				MAX_DIS=2000
+			fi				
+			echo -e "Program will use stations in a maximum distance of $MAX_DIS km.\nSelecting stations..."
+			sed -i "/e =/c\e = model.Event(lat=$EVELA, lon=$EVELO)" $PYROCKO/DIS_CAL.py 2> /dev/null
+			cat DATA/stations.dat | while read line; do
+				stnm=`echo $line | awk '{print $2}'`
+				stla=`echo $line | awk '{print $3}'`
+				stlo=`echo $line | awk '{print $4}'`
+				sed -i "/s =/c\s = model.Event(lat=$stla, lon=$stlo)" $PYROCKO/DIS_CAL.py 2> /dev/null
+				INFO=`python $PYROCKO/DIS_CAL.py`
+				dist=`echo $INFO | awk '{print $1}'`
+				echo "$stnm $dist"
+			done > .st_dis.txt	
+			
+			rm .selected_st.txt 2> /dev/null
+			cat .st_dis.txt	| while read line; do
+				stnm=`echo $line | awk '{print $1}'`
+				dist=`echo $line | awk '{print $2}'`
+				(( `echo "$dist <= $MAX_DIS" | bc -l` )) && echo "$stnm" 
+			done > .selected_st.txt	
+			echo "Station .No = `cat .selected_st.txt	| wc -l`"	
+				
+			
 			# Select the waveform length considering the event magnitude
 			if (( `echo "$EVEMAG < 4.00" | bc -l` )); then
-				TINC=350 
-			elif (( `echo "$EVEMAG >= 4.00" | bc -l` )) && (( `echo "$MAG < 5.00" | bc -l` )); then
-				TINC=450 
-			elif (( `echo "$EVEMAG >= 5.00" | bc -l` )) && (( `echo "$MAG < 6.00" | bc -l` )); then		
-				TINC=650
-			elif (( `echo "$EVEMAG >= 6.00" | bc -l` )) && (( `echo "$MAG < 7.00" | bc -l` )); then		
-				TINC=850 
-			elif (( `echo "$EVEMAG >= 7.00" | bc -l` )) && (( `echo "$MAG < 7.50" | bc -l` )); then		
+				TINC=300 
+			elif (( `echo "$EVEMAG >= 4.00" | bc -l` )) && (( `echo "$EVEMAG < 5.00" | bc -l` )); then
+				TINC=500
+			elif (( `echo "$EVEMAG >= 5.00" | bc -l` )) && (( `echo "$EVEMAG < 6.00" | bc -l` )); then		
+				TINC=700
+			elif (( `echo "$EVEMAG >= 6.00" | bc -l` )) && (( `echo "$EVEMAG < 7.00" | bc -l` )); then		
+				TINC=900
+			elif (( `echo "$EVEMAG >= 7.00" | bc -l` )) && (( `echo "$EVEMAG < 7.50" | bc -l` )); then		
 				TINC=1200 
 			fi
 			
-			echo "The Length of All Data Will be $TINC Seconds"
+			echo "The Data Length will be $TINC seconds."
 			
 			DATA_PATH="DATA/$EVE_DTE-$EVE_TME-$EVELA-$EVELO-$EVE_DEP-$EVEMAG"
 			
@@ -94,22 +131,29 @@ GET_EVE_INFO ()
 				DEC=2
 				sed -i "/pre_filt =/c\pre_filt = (0.005, 0.007, 0.8, 0.9)" $DECO  2> /dev/null		
 			fi
-			echo "All data will Decimate to $DEC SPS.\n"	
+			
+			echo -e "All data will Decimate to $DEC SPS.\n"	
 								
 			TMAX=`date -d "$EVE_DTE $EVE_TME $TINC seconds" "+%Y-%m-%d %H:%M:%S"`
+			
 			[ -d "$DATA_PATH" ] && rm -rf "$DATA_PATH"
+			# Remove extra data
+			find $DATA/"$YEAR"/ -type f -name "*.E.*" | xargs rm 2> /dev/null			
 			
 			# JACKSEIS, Extract and Decimate the Data
-			find $DATA/"$YEAR"/ -type f -name "*$YEAR.$JD" | xargs jackseis --tmin="$EVE_DTE $EVE_TME" \
-			--tmax="$TMAX" --downsample="$DEC" --output-dir="$DATA_PATH" --output=DISPL.%n.%s.%l.%c 
+			cat .selected_st.txt | while read STA; do
+				[ `find $DATA/"$YEAR"/ -type f -name "*$STA*$YEAR.$JD" | wc -l` -eq 0 ] && continue
+				find $DATA/"$YEAR"/ -type f -name "*$STA*$YEAR.$JD" | xargs jackseis --tmin="$EVE_DTE $EVE_TME" \
+				--tmax="$TMAX" --downsample="$DEC" --debug --output-dir="$DATA_PATH" --output=DISPL.%n.%s.%l.%c 2> /dev/null
+			done
 			
 			mkdir $DATA_PATH/DISP 2> /dev/null
 			
 			# Deconvolution process
-			echo "\nProgram started Deconvolution Process."
+			echo -e "\nProgram started Deconvolution Process."
 			for data in `ls $DATA_PATH/DISPL*`; do
 				Data=`echo $data | cut -f 3 -d "/"`  # Data name
-				resp=`ls RESP/RESP."${Data#*.}"`     # Select the response file
+				resp=`ls $RESP/RESP."${Data#*.}"`    # Select the response file
 				[ -z $resp ] && echo "No Metadata Available for $Data" && continue
 				sed -i "/respf =/c\respf = \'$resp\'" $DECO  2> /dev/null
 				sed -i "/st = obspy/c\st = obspy.read (\'$data\')" $DECO  2> /dev/null
