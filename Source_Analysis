@@ -57,7 +57,8 @@ AUTO_SET_KIWI_PARAM ()
 			MAX_DEP=`echo "$DEP + 10" | bc -l`
 			SCA_MOM1="2.0e14"
 			SCA_MOM2="9.0e14"
-			SCA_STEP="1.0e14"					
+			SCA_STEP="1.0e14"	
+			OMIT_NOISY="False"				
 			T=3.0; TS=0.5; CC=10
 
 	elif (( `echo "$MAG >= 4.00" | bc -l` )) && (( `echo "$MAG < 4.60" | bc -l` )) ; then
@@ -151,7 +152,7 @@ KIWI_SETUP ()
 	sed -i "/\<GFDB_STEP1\>/c\GFDB_STEP1     $GFDB_DIR" $WORK/$File  2> /dev/null
 	sed -i "/\<GFDB_STEP2\>/c\GFDB_STEP2     $GFDB_DIR" $WORK/$File  2> /dev/null
 	sed -i "/\<GFDB_STEP3\>/c\GFDB_STEP3     $GFDB_DIR" $WORK/$File  2> /dev/null
-	sed -i "/\<NUM_INV_STEPS\>/c\NUM_INV_STEPS    2" $WORK/$File  2> /dev/null
+	sed -i "/\<NUM_INV_STEPS\>/c\NUM_INV_STEPS    1" $WORK/$File  2> /dev/null
 	sed -i "/\<EPIC_DIST_MAX\>/c\EPIC_DIST_MAX     $MAX_DIS"  $WORK/$File  2> /dev/null
 	sed -i "/\<EPIC_DIST_MIN\>/c\EPIC_DIST_MIN     $MIN_DIS"  $WORK/$File  2> /dev/null
 	sed -i "/\<WIN_START_A_ST1\>/c\WIN_START_A_ST1     $W_S"  $WORK/$File  2> /dev/null
@@ -225,7 +226,7 @@ MAP ()
 		sta=`echo $line | cut -f 2 -d " "`
 		sla=`echo $line | cut -f 3 -d " "`
 		slo=`echo $line | cut -f 4 -d " "`
-		[ `grep -w -c "$sta" stations.unused` -eq 3 ] && continue
+		[ `grep -w -c "$sta" stations.unused 2> /dev/null` -eq 3 ] && continue
 		echo "$sla $slo $sta"
 	done > .stations.info
 	
@@ -402,11 +403,13 @@ PROCESS ()
 		KIWI_SETUP
 		cd $WORK
 		./rapidinv $File	
+		cp $File `grep -w "INVERSION_DIR" $File | awk '{print $2}'`
 	done
 	cd ../
 	
 	for EV_RES in `ls -d -1 $RESULTS/$EVENT/*/`; do
-		MF1=`grep "3 8 10 0 0" $EV_RES/step1.earthquakeinfo.dat | cut -f 7 -d " "`
+		[ ! -f  $EV_RES/step1.earthquakeinfo.dat ] && echo "No Event Info File Exists ..." && break 2
+		MF1=`grep "3 8 10 0 0" $EV_RES/step1.earthquakeinfo.dat 2> /dev/null | cut -f 7 -d " "`
 		echo "$EV_RES $MF1" 
 	done > .eve_summ
 	
@@ -420,14 +423,22 @@ PROCESS ()
 	KIWI_SETUP
 	sed -i "/INVERSION_DIR/c\INVERSION_DIR   $RESULTS/$EVENT/${FILTER[1]}-${FILTER[2]}_Check" $File 2> /dev/null
 	./rapidinv $File
+	cp $File `grep -w "INVERSION_DIR" $File | awk '{print $2}'`
 	cd -
 	
 	for EV_RES in `ls -d -1 $RESULTS/$EVENT/*$F1-$F2*`; do
-		MF=`grep "3 8 10 0 0" $EV_RES/step1.earthquakeinfo.dat | cut -f 7 -d " "`
+		MF=`grep "3 8 10 0 0" $EV_RES/step1.earthquakeinfo.dat 2> /dev/null | cut -f 7 -d " "`
 		echo "$EV_RES $MF" 
 	done > .eve_summ_final
 	
 	BEST_DIR=`cat .eve_summ_final | sort -n -k 2 | cut -f 1 -d " " | head -1`
+	cp $BEST_DIR/$File $WORK
+	
+	cd $WORK
+	sed -i "/\<NUM_INV_STEPS\>/c\NUM_INV_STEPS    2" $WORK/$File  2> /dev/null
+	./rapidinv $File
+	cd -
+	
 	sed -i "/$EVENT/d" .ready_data	
 	mv $WORK/$File $WORK/Processed/
 }
@@ -446,5 +457,5 @@ while true; do
 		MAP
 		echo "Event << $EVENT >> Processed Successfully ..."
 	done	
-	sleep 300
+	sleep 60
 done	
