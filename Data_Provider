@@ -16,7 +16,7 @@ LON_BORDER1=43.0	   # lon limit 1
 LON_BORDER2=63.0	   # lon limit 2
 MAGLIM=3.5			   # Magnitude limit
 TIME1=20			   # End time 
-TIME2=1000			   # Start time 
+TIME2=80			   # Start time 
 	
 
 
