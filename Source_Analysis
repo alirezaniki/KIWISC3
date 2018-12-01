@@ -435,12 +435,27 @@ PROCESS ()
 	cp $BEST_DIR/$File $WORK
 	
 	cd $WORK
-	sed -i "/\<NUM_INV_STEPS\>/c\NUM_INV_STEPS    2" $WORK/$File  2> /dev/null
+	Dep=`grep -w "3 10 10 0 0 5" $$BEST_DIR/step2.earthquakeinfo.dat | cut -f 7 -d " " | awk '{print substr($1,1,3)}'`
+	Str=`grep -w "3 15 10 0 0 5" $$BEST_DIR/step2.earthquakeinfo.dat | cut -f 7 -d " "`
+	Rak=`grep -w "3 13 10 0 0 5" $$BEST_DIR/step2.earthquakeinfo.dat | cut -f 7 -d " "`
+	Dip=`grep -w "3 14 10 0 0 5" $$BEST_DIR/step2.earthquakeinfo.dat | cut -f 7 -d " "`
+	M0=`grep -w "3 12 10 0 0 5" $$BEST_DIR/step2.earthquakeinfo.dat | cut -f 7 -d " "`
+	sed -i "/\<DEPTH_1\>/c\DEPTH_1          $Dep" $File  2> /dev/null
+	sed -i "/\<DEPTH_2\>/c\DEPTH_2          $Dep" $File  2> /dev/null	
+	sed -i "/\<STRIKE_1\>/c\STRIKE_1         $Str" $File  2> /dev/null	
+	sed -i "/\<DIP_1\>/c\DIP_1            $Dip" $File  2> /dev/null	
+	sed -i "/\<RAKE_1\>/c\RAKE_1           $Rak" $File  2> /dev/null
+	sed -i "/\<STRIKE_2\>/c\STRIKE_2         $Str" $File  2> /dev/null	
+	sed -i "/\<DIP_2\>/c\DIP_2            $Dip" $File  2> /dev/null	
+	sed -i "/\<RAKE_2\>/c\RAKE_2           $Rak" $File  2> /dev/null
+	sed -i "/\<SCAL_MOM_1\>/c\SCAL_MOM_1      $M0" $File  2> /dev/null
+	sed -i "/\<SCAL_MOM_2\>/c\SCAL_MOM_2      $M0" $File  2> /dev/null
+	sed -i "/\<SCAL_MOM_STEP\>/c\SCAL_MOM_STEP   $M0" $File  2> /dev/null	
+	sed -i "/\<INV_MODE_STEP1\>/c\INV_MODE_STEP1   grid" $File  2> /dev/null	
+	sed -i "/\<NUM_INV_STEPS\>/c\NUM_INV_STEPS    2" $File  2> /dev/null
 	./rapidinv $File
-	cd -
-	
-	sed -i "/$EVENT/d" .ready_data	
 	mv $WORK/$File $WORK/Processed/
+	cd -
 }
 
 
@@ -451,6 +466,7 @@ while true; do
 	cat .ready_data | while read EVENT; do
 		[ ! -d "$RESULTS/$EVENT" ] && mkdir "$RESULTS/$EVENT"
 		EVENT_INFO
+		sed -i "/$EVENT/d" .ready_data
 		STATIONS.DAT
 		AUTO_SET_KIWI_PARAM
 		PROCESS
