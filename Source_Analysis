@@ -417,7 +417,6 @@ PROCESS ()
 	F1=`echo $BEST_F | cut -f 1 -d "-"`
 	F2=`echo $BEST_F | cut -f 2 -d "-"`
 	read -a FILTER <<< "$F1 $F1 $F2 $F2"
-	
 	cd $WORK
 	W_S=0.15; W_T=0.1
 	KIWI_SETUP
@@ -433,13 +432,15 @@ PROCESS ()
 	
 	BEST_DIR=`cat .eve_summ_final | sort -n -k 2 | cut -f 1 -d " " | head -1`
 	cp $BEST_DIR/$File $WORK
+	sleep 60
 	
 	cd $WORK
-	Dep=`grep -w "3 10 10 0 0 5" $$BEST_DIR/step2.earthquakeinfo.dat | cut -f 7 -d " " | awk '{print substr($1,1,3)}'`
-	Str=`grep -w "3 15 10 0 0 5" $$BEST_DIR/step2.earthquakeinfo.dat | cut -f 7 -d " "`
-	Rak=`grep -w "3 13 10 0 0 5" $$BEST_DIR/step2.earthquakeinfo.dat | cut -f 7 -d " "`
-	Dip=`grep -w "3 14 10 0 0 5" $$BEST_DIR/step2.earthquakeinfo.dat | cut -f 7 -d " "`
-	M0=`grep -w "3 12 10 0 0 5" $$BEST_DIR/step2.earthquakeinfo.dat | cut -f 7 -d " "`
+	Dep=`grep -w "3 10 10 0 0 5" $BEST_DIR/step1.earthquakeinfo.dat | cut -f 7 -d " "` && Dep=${Dep::-2}
+	Str=`grep -w "3 15 10 0 0 5" $BEST_DIR/step1.earthquakeinfo.dat | cut -f 7 -d " "` && Str=`echo $Str | cut -f 1 -d "."`
+	Rak=`grep -w "3 13 10 0 0 5" $BEST_DIR/step1.earthquakeinfo.dat | cut -f 7 -d " "` && Rak=`echo $Rak | cut -f 1 -d "."`
+	Dip=`grep -w "3 14 10 0 0 5" $BEST_DIR/step1.earthquakeinfo.dat | cut -f 7 -d " "` && Dip=`echo $Dip | cut -f 1 -d "."`
+	M0=`grep -w "3 12 10 0 0 5" $BEST_DIR/step1.earthquakeinfo.dat | cut -f 7 -d " "` && M0=${M0::-2}
+
 	sed -i "/\<DEPTH_1\>/c\DEPTH_1          $Dep" $File  2> /dev/null
 	sed -i "/\<DEPTH_2\>/c\DEPTH_2          $Dep" $File  2> /dev/null	
 	sed -i "/\<STRIKE_1\>/c\STRIKE_1         $Str" $File  2> /dev/null	
@@ -450,9 +451,9 @@ PROCESS ()
 	sed -i "/\<RAKE_2\>/c\RAKE_2           $Rak" $File  2> /dev/null
 	sed -i "/\<SCAL_MOM_1\>/c\SCAL_MOM_1      $M0" $File  2> /dev/null
 	sed -i "/\<SCAL_MOM_2\>/c\SCAL_MOM_2      $M0" $File  2> /dev/null
-	sed -i "/\<SCAL_MOM_STEP\>/c\SCAL_MOM_STEP   $M0" $File  2> /dev/null	
 	sed -i "/\<INV_MODE_STEP1\>/c\INV_MODE_STEP1   grid" $File  2> /dev/null	
 	sed -i "/\<NUM_INV_STEPS\>/c\NUM_INV_STEPS    2" $File  2> /dev/null
+	
 	./rapidinv $File
 	mv $WORK/$File $WORK/Processed/
 	cd -
