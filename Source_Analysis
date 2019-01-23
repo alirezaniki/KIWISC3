@@ -14,17 +14,23 @@ export PYROCKO="$KIWI/PYROCKO"
 #frac=n          is the fraction of stations to be subject to removal in each iteration ( N = num_st / $frac )
 #DISLIM=m        is a clearance distance around removed stations preventing that two close-by stations are
 #			     simultaneously removed in a single iteration (DISTANCLIMIT = $MDI * $DISLIM)  
-			   
-DCMISFIT_LIM=0.65
-W_S=0.2; W_T=0.1 
-MIN_DIS=1
-MIN_DEP=1
-OMIT_NOISY="False"
-WEIGHT_DIST="False"
-FULLMT="False"
-DC_INV_MOD="invert_dmsdsok"
+
+
 
 ############### Functions
+
+CONFIG ()
+{	
+export SMOOTH_NUM_LIM=54			   
+export DCMISFIT_LIM=0.65
+export W_S=0.2; W_T=0.1 
+export MIN_DIS=1
+export MIN_DEP=1
+export OMIT_NOISY="False"
+export WEIGHT_DIST="False"
+export FULLMT="False"
+export DC_INV_MOD="invert_dmsdsok"
+}
 
 
 round ()
@@ -57,7 +63,8 @@ SMOOTH_STATIONS ()
 	cat .stations.dat | while read ST1; do
 		cat .stations.dat | while read ST2; do
 			[ "$ST1" = "$ST2" ] && continue
-			grep -w "$ST1 $ST2" $DATA/distance-info.txt >> .st_st_dist
+			st_dis=`grep -w "$ST1 $ST2" $DATA/distance-info.txt`  
+			echo $st_dis >> .st_st_dist
 		done
 	done	
 
@@ -148,20 +155,23 @@ AUTO_SET_KIWI_PARAM ()
 		MAXDI=1500
 	fi	
 
-	if (( `echo "$MAG >= 4.00" | bc -l` )) && (( `echo "$MAG < 4.60" | bc -l` )) ; then
-			F1=(0.06 0.06 0.09 0.09)
-			F2=(0.05 0.05 0.08 0.08)
-			F3=(0.04 0.04 0.07 0.07)
+
+	if (( `echo "$MAG >= 4.20" | bc -l` )) && (( `echo "$MAG < 4.60" | bc -l` )) ; then
+			F1=(0.05 0.05 0.08 0.08)
+			F2=(0.04 0.04 0.07 0.07)
+			F3=(0.06 0.06 0.09 0.09)
 			n=3
-			data_count=18          # for FILTERNOIST activation
+			data_count=18         # for FILTER_NOISY activation
 			frac=3
 			DISLIM=4
-			NE=20000; NES=2000
+			S2_USE_P="yes"
+			B_LEN=60
+			NE=30000; NES=3500
 			SCA_MOM1="9.0e14"	
 			SCA_MOM2="8.0e15"	
 			SCA_STEP="1.0e14"					
-			MAX_DIS=400
-			MAX_DEP=`echo "$DEP + 15" | bc -l`		
+			MAX_DIS=450
+			MAX_DEP=`echo "$DEP + 40" | bc -l`		
 			T=4.0; TS=0.5; CC=10
 
 	elif (( `echo "$MAG >= 4.60" | bc -l` )) && (( `echo "$MAG < 5.00" | bc -l` )) ; then		
@@ -169,15 +179,17 @@ AUTO_SET_KIWI_PARAM ()
 			F2=(0.04 0.04 0.07 0.07)
 			F3=(0.03 0.03 0.06 0.06)
 			n=3
-			data_count=21
+			data_count=18
 			frac=3
-			DISLIM=4			
-			NE=25000; NES=3000
+			DISLIM=4	
+			S2_USE_P="yes"
+			B_LEN=60					
+			NE=30000; NES=3500
 			SCA_MOM1="7.5e15"
 			SCA_MOM2="4.0e16"	
 			SCA_STEP="1.0e15"						
 			MAX_DIS=500
-			MAX_DEP=`echo "$DEP + 15" | bc -l`		
+			MAX_DEP=`echo "$DEP + 40" | bc -l`		
 			T=5.0; TS=0.5; CC=10
 
 	elif (( `echo "$MAG >= 5.00" | bc -l` )) && (( `echo "$MAG < 5.60" | bc -l` )) ; then		
@@ -186,14 +198,15 @@ AUTO_SET_KIWI_PARAM ()
 			F3=(0.02 0.02 0.05 0.05)
 			n=3
 			frac=3
-			DISLIM=4			
+			DISLIM=4		
+			S2_USE_P="no"	
 			data_count=21
-			NE=30000; NES=4000
+			NE=40000; NES=4500
 			SCA_MOM1="2.0e16"
 			SCA_MOM2="3.5e17"	
 			SCA_STEP="1.0e16"						
 			MAX_DIS=600
-			MAX_DEP=`echo "$DEP + 20" | bc -l`			
+			MAX_DEP=`echo "$DEP + 40" | bc -l`			
 			T=6.0; TS=0.5; CC=10
 
 	elif (( `echo "$MAG >= 5.60" | bc -l` )) && (( `echo "$MAG < 6.00" | bc -l` )) ; then		
@@ -202,15 +215,16 @@ AUTO_SET_KIWI_PARAM ()
 			F3=(0.02 0.02 0.05 0.05)
 			n=3
 			frac=2
-			DISLIM=3			
-			data_count=21
-			NE=40000; NES=5000
+			DISLIM=3
+			S2_USE_P="no"			
+			data_count=21        
+			NE=45000; NES=5000
 			SCA_MOM1="1.5e17"
 			SCA_MOM2="9.5e17"	
 			SCA_STEP="1.0e17"						
 			MAX_DIS=1000
 			MIN_DIS=100			
-			MAX_DEP=`echo "$DEP + 20" | bc -l`			
+			MAX_DEP=`echo "$DEP + 40" | bc -l`			
 			T=7.0; TS=0.5; CC=10
 
 	elif (( `echo "$MAG >= 6.00" | bc -l` )) && (( `echo "$MAG < 7.00" | bc -l` )) ; then				
@@ -219,24 +233,26 @@ AUTO_SET_KIWI_PARAM ()
 			F3=(0.01 0.01 0.04 0.04)
 			n=3
 			frac=2
-			DISLIM=2			
+			DISLIM=2
+			S2_USE_P="no"			
 			data_count=21
-			NE=50000; NES=6000
+			NE=55000; NES=6000
 			SCA_MOM1="8.5e17"
 			SCA_MOM2="4.0e19"	
 			SCA_STEP="1.0e18"			
 			MAX_DIS=1300
 			MIN_DIS=250
-			MAX_DEP=`echo "$DEP + 25" | bc -l`
+			MAX_DEP=`echo "$DEP + 40" | bc -l`
 			T=15.0; TS=0.5; CC=10
 	
 	else
-			F1=(0.01 0.01 0.04 0.04)
-			F2=(0.0055 0.0055 0.025 0.025)
+			F1=(0.01 0.01 0.040 0.040)
+			F2=(0.01 0.01 0.035 0.035)
 			F3=(0.005 0.005 0.02 0.02)
 			n=3
 			frac=2
-			DISLIM=2			
+			DISLIM=2	
+			S2_USE_P="no"		
 			data_count=21
 			NE=60000; NES=7000
 			SCA_MOM1="2.0e19"
@@ -244,7 +260,7 @@ AUTO_SET_KIWI_PARAM ()
 			SCA_STEP="1.0e19"			
 			MAX_DIS=1300
 			MIN_DIS=400
-			MAX_DEP=`echo "$DEP + 25" | bc -l`
+			MAX_DEP=`echo "$DEP + 40" | bc -l`
 			T=25.0; TS=0.5; CC=10
 		
 	fi	
@@ -472,7 +488,7 @@ MAP ()
 	rm ./gmt.history 2> /dev/null
 	cd $KIWI/RESULTS/SUMMARY/Map-All
 	bash ./RUN
-	cd -
+	cd $KIWI
 	echo -e "\n"
 }	
 
@@ -614,6 +630,17 @@ PROCESS ()
 	sed -i "/\<INV_MODE_STEP1\>/c\INV_MODE_STEP1   grid" $File  2> /dev/null	
 	sed -i "/\<NUM_INV_STEPS\>/c\NUM_INV_STEPS    2" $File  2> /dev/null
 	
+	if [ "$S2_USE_P" = "yes" ]; then
+		sed -i "/\<PHASES_2_USE_ST2\>/c\PHASES_2_USE_ST2  b"	$File  2> /dev/null		
+		sed -i "/\<WIN_LENGTH_P_ST2\>/c\WIN_LENGTH_P_ST2  $B_LEN"	$File  2> /dev/null	
+		sed -i "/\<WIN_LENGTH_S_ST2\>/c\WIN_LENGTH_S_ST2  $B_LEN"	$File  2> /dev/null	
+		sed -i "/\<WIN_START_P_ST2\>/c\WIN_START_P_ST2  $W_S"	$File  2> /dev/null	
+		sed -i "/\<WIN_TAPER_P_ST2\>/c\WIN_TAPER_P_ST2  $W_T"	$File  2> /dev/null		
+		sed -i "/\<WIN_START_S_ST2\>/c\WIN_START_S_ST2  $W_S"	$File  2> /dev/null	
+		sed -i "/\<WIN_TAPER_S_ST2\>/c\WIN_TAPER_S_ST2  $W_T"	$File  2> /dev/null			
+		sed -i "/\<BP_F3_STEP2\>/c\BP_F3_STEP2       0.1"	$File  2> /dev/null		
+		sed -i "/\<BP_F4_STEP2\>/c\BP_F4_STEP2       0.1"	$File  2> /dev/null	
+	fi
 	./rapidinv $File
 	mv $WORK/$File $WORK/Processed/
 	cd -
@@ -625,11 +652,12 @@ PROCESS ()
 
 while true; do
 	cat .ready_data | while read EVENT; do
-		[ ! -d "$RESULTS/$EVENT" ] && mkdir "$RESULTS/$EVENT"
+		[ -d "$RESULTS/$EVENT" ] && rm -rf $RESULTS/$EVENT/* || mkdir "$RESULTS/$EVENT"
 		EVENT_INFO
 		sed -i "/$EVENT/d" .ready_data	
+		CONFIG
 		AUTO_SET_KIWI_PARAM
-		SMOOTH_STATIONS
+		[ `ls $DATA/$EVENT/DISP/DISPL* | wc -l` -gt "$SMOOTH_NUM_LIM" ] && SMOOTH_STATIONS
 		STATIONS.DAT
 		PROCESS
 		MAP
