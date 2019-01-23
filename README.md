@@ -3,7 +3,7 @@ A Bash code to link Seiscomp3 to KIWI tools for automatic (Online) source analys
 
 # Requirements
 
-- Seiscomp3, KIWI, Pyrocko, Obspy, GMT 5 
+- Seiscomp3, KIWI, Pyrocko, GMT 5 
 
 # Notes
 
@@ -13,10 +13,14 @@ Create these directories in the KIWISC3 main directory:
 
 2- RESP = Put your Response files in this Folder
 
-3- RESULTS
+3- RESULTS/SUMMARY/Map_All
+
 
 - Set the Proper Paths in both main codes.
 
-- You may need to alter the code (Source_Analysis lines 28 - 48) to define your own GFDB's in specific conditions.
+- You may need to alter the code (Source_Analysis lines 134 - 156) to define your own GFDB's in specific conditions.
 
 - Response files must be stored in RESP.$NET.$STA.$LOC.$CHAN name format.
+
+- Read the README file in RESULTS/SUMMARY/Map_All dir.
+
