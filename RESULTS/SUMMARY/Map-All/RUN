@@ -1,0 +1,41 @@
+#!/bin/bash
+
+gmt grdcut iran.nc -R43/64/24/41 -Gkahak.nc
+gmt grdgradient kahak.nc -Ne0.8 -A90 -fg  -Gkahak_i.nc
+gmt makecpt -D -I -Celevation -T0/5500/500 -Z > topo.cpt
+gmt grdimage kahak.nc -JM7.8i -Ikahak_i.nc -Ba -Ei600 -Ctopo.cpt -Xc -Yc -K > Map_Focal.ps
+gmt pscoast -W0.5,black -R -J -N1/2p,black -Sblue -A5000 -O -K >> Map_Focal.ps
+
+# Faults 
+gmt psxy -J -R reverse1.txt -i0,1 -W0.2p,black -Sf0.4c/0.05c+r+f+o2 -O -K -Nc >> Map_Focal.ps
+gmt psxy -J -R thrustr.txt -i0,1 -W0.2p,black -Sf1c/0.1c+r+t+o0.5 -Gblack -O -K -Nc >> Map_Focal.ps
+gmt psxy -J -R thrustl.txt -i0,1 -W0.2p,black -Sf1c/0.1c+l+t+o0.5 -Gblack -O -K -Nc >> Map_Focal.ps
+gmt psxy -J -R strike-slipr.txt -i0,1 -W0.2p,black -Sf1c/0.3c+r+s+o2 -O -K -Nc >> Map_Focal.ps
+gmt psxy -J -R strike-slipl.txt -i0,1 -W0.2p,black -Sf1c/0.3c+l+s+o2 -O -K -Nc >> Map_Focal.ps
+gmt psxy -J -R normal.txt -i0,1 -W0.2p,black -Sf0.5c/0.2c+f+o2 -O -K -Nc >> Map_Focal.ps
+
+gmt pstext -R -J -F,red -O -K -B  << END >> Map_Focal.ps
+50.15 38.8 17 0 0 1 Caspian
+END
+gmt pstext -R -J -F,red -O -K -B  << END >> Map_Focal.ps
+50.8 38.25 17 0 0 1 Sea
+END
+gmt pstext -R -J -F,red -O -K -B  << END >> Map_Focal.ps
+58.2 24.5 17 0 0 1 Oman Sea
+END
+gmt pstext -R -J -F,red -O -K -B  << END >> Map_Focal.ps
+49.3 29 17 300 0 1 Persian Gulf
+END
+
+cat info | while read line; do
+
+lat=`echo $line | cut -f 1 -d " "`
+lon=`echo $line | cut -f 2 -d " "`
+foc=`echo $line | cut -f 3- -d " "`
+
+gmt psmeca -J -R -W0.8,red -Gred -Sa1.0 -K -O << EOF >> Map_Focal.ps
+$lon $lat 10 $foc 5 $lon $lat  
+EOF
+
+done 
+

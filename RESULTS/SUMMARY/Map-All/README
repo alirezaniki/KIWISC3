@@ -1,0 +1,7 @@
+To make an automatic map including all processed focal mechanism you
+must provide the following files:
+
+1- elevetaion grid data for your region of interest.
+2- faults data file including its coordinate points. (lat lon)
+
+you can revise the bash file as you wish ;)
