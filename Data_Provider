@@ -64,7 +64,7 @@ GET_EVE_INFO ()
 		elif [ "$TH1" -eq "1" ] && [ "$TH2" -eq "1" ] && [ "$TH3" -eq "1" ] && [ "$TH4" -eq "1" ]; then
 			DEC=10
 			MAX_DEP="35"
-			freql=(0.005 0.007 4.0 4.5)
+			freql=(0.005 0.008 4.0 4.5)
 		else
 			DEC=2
 			MAX_DEP="60"
@@ -146,7 +146,7 @@ GET_EVE_INFO ()
 							
 			TMAX=`date -d "$EVE_DTE $EVE_TME $TINC seconds" "+%Y-%m-%d %H:%M:%S"`
 			
-			[ -d "$DATA_PATH" ] && rm -rf "$DATA_PATH"
+			[ -d "$DATA_PATH" ] && mkdir "$DATA_PATH" || rm -f $DATA_PATH/* 2> /dev/null
 			
 			# Remove extra data
 			find $DATA/"$YEAR"/ -type f -name "*.E.*" | xargs rm 2> /dev/null			
