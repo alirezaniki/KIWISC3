@@ -32,6 +32,11 @@ export FULLMT="False"
 export DC_INV_MOD="invert_dmsdsok"
 }
 
+SMB_BK ()
+{
+	# Output .ps file name is in YYYYMMDDHHmmss format
+	smbclient -U user%payesh //192.168.127.27/public -c "cd /NikSejel/Focal-BK ; put $RESULTS/SUMMARY/$EVENT.ps $Y$M$D$h$m$s.ps"
+}
 
 round ()
 {
@@ -486,6 +491,7 @@ MAP ()
 	EOF
 
 	rm ./gmt.history 2> /dev/null
+	[ "$SMB_BK" = "True" ] && SMB_BK
 	cd $KIWI/RESULTS/SUMMARY/Map-All
 	bash ./RUN
 	cd $KIWI
