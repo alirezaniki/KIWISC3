@@ -24,3 +24,5 @@ Create these directories in the KIWISC3 main directory:
 
 - Read the README file in RESULTS/SUMMARY/Map_All dir.
 
+This Readme file is incomplete. Contact me for more details.
+
