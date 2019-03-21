@@ -118,9 +118,9 @@ SMOOTH_STATIONS ()
 		i=0
 		for st in `cat .stations.dat`; do	
 			[ "$st" = "$STNM" ] && continue
-			dist=`grep "$st $STNM" .st_st_dist | cut -f 3 -d " "`
+			dist=`grep -w "$st $STNM" .st_st_dist | cut -f 3 -d " "`
 			dist=`round $dist 0 2> /dev/null`
-			if (( `echo "$dist < $DIS_LIM" | bc -l` )) && [ `grep "$st" .final_del 2> /dev/null` ]; then
+			if (( `echo "$dist < $DIS_LIM" | bc -l` )) && [ `grep -w "$st" .final_del 2> /dev/null` ]; then
 				i=$((i+1))
 			fi
 		done
