@@ -2,7 +2,8 @@ import seiscomp3.Kernel, sys, os, subprocess
 
 file_path = '/home/alireza/seiscomp3/sckiwi/Data_Provider'
 
-Main_Sc = 'Data_Providerz'
+
+Main_Sc = file_path.split ('/')[-1]
 
 class Module (seiscomp3.Kernel.Module):
 	def __init__ (self, env):
