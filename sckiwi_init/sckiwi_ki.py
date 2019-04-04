@@ -1,8 +1,9 @@
 import seiscomp3.Kernel, sys, os, subprocess
 # The path to the Source_Analysis file
 file_path = '/home/alireza/seiscomp3/sckiwi/Source_Analysis'
-# File name
-Main_Sc = 'Source_Analysis'
+
+
+Main_Sc = file_path.split ('/')[-1]
 
 class Module (seiscomp3.Kernel.Module):
 	def __init__ (self, env):
