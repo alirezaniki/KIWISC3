@@ -655,7 +655,7 @@ PROCESS ()
 
 ################################## Script Body
 
-
+cd $KIWI
 while true; do
 	cat .ready_data | while read EVENT; do
 		[ -d "$RESULTS/$EVENT" ] && rm -rf $RESULTS/$EVENT/* || mkdir "$RESULTS/$EVENT"
