@@ -5,16 +5,6 @@ Tips:
 3- start the scconfig and there you go :))  you can start your modules (e.g. sckiwi_ki & sckiwi_sc).
 
 Point:
-1- Be aware that none-absolute paths in both main Bash codes (e.g. Data_Provider and Source_Analysis)
-can cause some problems in their functionality. Try to alter them as absolute paths.
-
-For example:
-seiscomp exec scbulletin -E $EVID -3 -d mysql://sysop:sysop@"$HOST"/seiscomp3 > .EVE_INFO.txt
- 
-this line should be like:
-
-seiscomp exec scbulletin -E $EVID -3 -d mysql://sysop:sysop@"$HOST"/seiscomp3 > $KIWI_HOME/.EVE_INFO.txt
-
-2- Both Bash codes will be run in background so "echo" functions are useless in both cases.
+1- Both Bash codes will be run in background so "echo" functions are useless in both cases.
 
 fell free Letting me know if you interupted by any problems ;)
