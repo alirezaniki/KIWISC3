@@ -199,7 +199,7 @@ GET_EVE_INFO ()
 	echo "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#"
 }	
 
-
+cd $KIWI_HOME
 while true; do
 
 	T1=`date -u --date="$TIME1 minutes ago" "+%Y-%m-%d %H:%M:%S"`
