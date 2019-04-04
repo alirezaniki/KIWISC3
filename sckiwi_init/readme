@@ -1,20 +1,20 @@
 This is how you can run both main codes in Seiscomp3 as modules!
 Tips:
-1- modify lines 3 and 5 in both python codes and set the proper paths.
+1- modify line 3 in both python codes and set the proper paths.
 2- put the codes in $SEISCOMP_HOME/etc/init dir
 3- start the scconfig and there you go :))  you can start your modules (e.g. sckiwi_ki & sckiwi_sc).
 
 Point:
-1- Be aware that none-absolute paths in both main codes (e.g. Data_Provider and Source_Analysis)
+1- Be aware that none-absolute paths in both main Bash codes (e.g. Data_Provider and Source_Analysis)
 can cause some problems in their functionality. Try to alter them as absolute paths.
 
-for example:
+For example:
 seiscomp exec scbulletin -E $EVID -3 -d mysql://sysop:sysop@"$HOST"/seiscomp3 > .EVE_INFO.txt
  
 this line should be like:
 
 seiscomp exec scbulletin -E $EVID -3 -d mysql://sysop:sysop@"$HOST"/seiscomp3 > $KIWI_HOME/.EVE_INFO.txt
 
-2- Both Bash codes will be run in background so "echo" functions are useless in both codes.
+2- Both Bash codes will be run in background so "echo" functions are useless in both cases.
 
 fell free Letting me know if you interupted by any problems ;)
