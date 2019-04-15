@@ -3,10 +3,8 @@
 ################ DIRECTORIES
 SC3_HOME="/home/kiwi/seiscomp3"
 KIWI_HOME="$SC3_HOME/KIWISC3"
-PYROCKO="$KIWI_HOME/PYROCKO"
 RESP="$KIWI_HOME/RESP"
 DATA="$SC3_HOME/data"
-DECO="$KIWI_HOME/PYROCKO/DECO.py"
 
 ################ CONFIG
 Country="Iran"
@@ -89,72 +87,46 @@ GET_EVE_INFO ()
 			YEAR=${EVE_DTE%%-*}
 			JD=`date -d "$EVE_DTE" +%j`
 			
+			# Setting Time window length based on MAX_DIS values in SOURCE_ANALYSIS script And the equation (0.36 * Dist) + 60  ...
+		
 			if (( `echo "$EVEMAG >= 4.00" | bc -l` )) && (( `echo "$EVEMAG < 4.60" | bc -l` )) ; then					
-				MAX_DIS=400
+				TINC=260
 			elif (( `echo "$EVEMAG >= 4.60" | bc -l` )) && (( `echo "$EVEMAG < 5.00" | bc -l` )) ; then							
-				MAX_DIS=500
+				TINC=280
 			elif (( `echo "$EVEMAG >= 5.00" | bc -l` )) && (( `echo "$EVEMAG < 5.60" | bc -l` )) ; then							
-				MAX_DIS=600
+				TINC=310
 			elif (( `echo "$EVEMAG >= 5.60" | bc -l` )) && (( `echo "$EVEMAG < 6.00" | bc -l` )) ; then							
-				MAX_DIS=1000
+				TINC=450
 			elif (( `echo "$EVEMAG >= 6.00" | bc -l` )) && (( `echo "$EVEMAG < 7.00" | bc -l` )) ; then						
-				MAX_DIS=1300
+				TINC=560
 			else
-				MAX_DIS=1300
+				TINC=600
 			fi			
-				
-			echo -e "Program will use stations in a maximum distance of $MAX_DIS km.\nSelecting stations..."
-			sed -i "/e =/c\e = model.Event(lat=$EVELA, lon=$EVELO)" $PYROCKO/DIS_CAL.py 2> /dev/null
-			cat DATA/stations.dat | while read line; do
-				stnm=`echo $line | awk '{print $2}'`
-				stla=`echo $line | awk '{print $3}'`
-				stlo=`echo $line | awk '{print $4}'`
-				sed -i "/s =/c\s = model.Event(lat=$stla, lon=$stlo)" $PYROCKO/DIS_CAL.py 2> /dev/null
-				INFO=`python $PYROCKO/DIS_CAL.py`
-				dist=`echo $INFO | awk '{print $1}'`
-				echo "$stnm $dist"
-			done > .st_dis.txt	
+							
+			# Station selection based on stations used by sc3 for picking (stations with valid SNR)
+		
+			SL=`grep -win "Phase arrivals" .EVE_INFO.txt | cut -f 1 -d ":"` && L1=$(( SL + 2 ))
+			EL=`grep -win "Station magnitudes" .EVE_INFO.txt | cut -f 1 -d ":"` && L2=$(( EL - 2 ))
+			awk "NR >= $L1 && NR <= $L2 {print}" .EVE_INFO.txt | awk '{print $1}' > .selected_st.txt
 			
-			rm .selected_st.txt 2> /dev/null
-			cat .st_dis.txt	| while read line; do
-				stnm=`echo $line | awk '{print $1}'`
-				dist=`echo $line | awk '{print $2}'`
-				(( `echo "$dist <= $MAX_DIS" | bc -l` )) && echo "$stnm" 
-			done > .selected_st.txt
 			
 			echo "################## STATIONS TO BE USED ##################"
 			cat .selected_st.txt
-			echo "#########################################################"
-			
-			# Select the waveform length considering the event magnitude
-			if (( `echo "$EVEMAG < 4.00" | bc -l` )); then
-				TINC=350 
-			elif (( `echo "$EVEMAG >= 4.00" | bc -l` )) && (( `echo "$EVEMAG < 5.00" | bc -l` )); then
-				TINC=550
-			elif (( `echo "$EVEMAG >= 5.00" | bc -l` )) && (( `echo "$EVEMAG < 6.00" | bc -l` )); then		
-				TINC=750
-			elif (( `echo "$EVEMAG >= 6.00" | bc -l` )) && (( `echo "$EVEMAG < 7.00" | bc -l` )); then		
-				TINC=950
-			elif (( `echo "$EVEMAG >= 7.00" | bc -l` )) && (( `echo "$EVEMAG < 7.50" | bc -l` )); then		
-				TINC=1150
-			fi
+			echo "#########################################################"	
 			
 			echo "The Data Length will be $TINC seconds."
-			echo "All data will Decimate to $DEC SPS."	
+			echo "All data will Decimate to $DEC SPS."
 			
 			DATA_PATH="DATA/$EVE_DTE-$EVE_TME-$EVELA-$EVELO-$EVE_DEP-$EVEMAG"
 							
 			TMAX=`date -d "$EVE_DTE $EVE_TME $TINC seconds" "+%Y-%m-%d %H:%M:%S"`
 			
-			[ -d "$DATA_PATH" ] && mkdir "$DATA_PATH" || rm -f $DATA_PATH/* 2> /dev/null
-			
-			# Remove extra data
-			find $DATA/"$YEAR"/ -type f -name "*.E.*" | xargs rm 2> /dev/null			
+			[ -d "$DATA_PATH" ] && mkdir "$DATA_PATH" || rm -f $DATA_PATH/* 2> /dev/null			
 			
 			# JACKSEIS, Extract and Decimate the Data
 			cat .selected_st.txt | while read STA; do
-				[ `find $DATA/"$YEAR"/ -type f -name "*$STA*$YEAR.$JD" | wc -l` -eq 0 ] && continue
-				find $DATA/"$YEAR"/ -type f -name "*$STA*$YEAR.$JD" | xargs jackseis --tmin="$EVE_DTE $EVE_TME" \
+				[ `find $DATA/"$YEAR"/ -type f -name "*$STA*.D.$YEAR.$JD" | wc -l` -eq 0 ] && continue
+				find $DATA/"$YEAR"/ -type f -name "*$STA*.D.$YEAR.$JD" | xargs jackseis --tmin="$EVE_DTE $EVE_TME" \
 				--tmax="$TMAX" --downsample="$DEC" --debug --output-dir="$DATA_PATH" --output-format="sac" --output=%n.%s.%l.%c.SAC 2> /dev/null
 			done
 			
