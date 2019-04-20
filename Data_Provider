@@ -121,7 +121,7 @@ GET_EVE_INFO ()
 							
 			TMAX=`date -d "$EVE_DTE $EVE_TME $TINC seconds" "+%Y-%m-%d %H:%M:%S"`
 			
-			[ -d "$DATA_PATH" ] && mkdir "$DATA_PATH" || rm -f $DATA_PATH/* 2> /dev/null			
+			[ ! -d "$DATA_PATH" ] && mkdir -p "$DATA_PATH" || rm -f $DATA_PATH/* 2> /dev/null			
 			
 			# JACKSEIS, Extract and Decimate the Data
 			cat .selected_st.txt | while read STA; do
