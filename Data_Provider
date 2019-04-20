@@ -121,7 +121,7 @@ GET_EVE_INFO ()
 							
 			TMAX=`date -d "$EVE_DTE $EVE_TME $TINC seconds" "+%Y-%m-%d %H:%M:%S"`
 			
-			[ ! -d "$DATA_PATH" ] && mkdir -p "$DATA_PATH" || rm -f $DATA_PATH/* 2> /dev/null			
+			[ ! -d "$DATA_PATH" ] && mkdir -p "$DATA_PATH" || rm -rf $DATA_PATH/* 2> /dev/null			
 			
 			# JACKSEIS, Extract and Decimate the Data
 			cat .selected_st.txt | while read STA; do
@@ -129,9 +129,10 @@ GET_EVE_INFO ()
 				find $DATA/"$YEAR"/ -type f -name "*$STA*.D.$YEAR.$JD" | xargs jackseis --tmin="$EVE_DTE $EVE_TME" \
 				--tmax="$TMAX" --downsample="$DEC" --debug --output-dir="$DATA_PATH" --output-format="sac" --output=%n.%s.%l.%c.SAC 2> /dev/null
 			done
+			[ `ls $DATA_PATH/*SAC 2> /dev/null | wc -l` -eq "0" ] && echo "No data available for $EVID event" && continue
 			
 			mkdir "$DATA_PATH"/DISP 
-			cp .selected_st.txt	$DATA_PATH/DISP/.stations.dat
+			cp .selected_st.txt $DATA_PATH/DISP/.stations.dat
 			
 			# Deconvolution process
 			echo -e "\nProgram started Deconvolution Process."
