@@ -116,7 +116,7 @@ SMOOTH_STATIONS ()
 		DIS_LIM=`echo "$MDI * $DISLIM" | bc -l`
 			
 		i=0
-		for st in `cat .stations.dat`; do	
+		for st in `cat .rm_select`; do	
 			[ "$st" = "$STNM" ] && continue
 			dist=`grep -w "$st $STNM" .st_st_dist | cut -f 3 -d " "`
 			dist=`round $dist 0 2> /dev/null`
