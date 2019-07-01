@@ -139,38 +139,28 @@ SMOOTH_STATIONS ()
 AUTO_SET_KIWI_PARAM ()
 {
 	SW1=`echo "$LAT >= 27.6" | bc -l`
-	SW2=`echo "$LAT <= 30.2" | bc -l`
-	SW3=`echo "$LON >= 51.5" | bc -l`
-	SW4=`echo "$LON <= 54.7" | bc -l`
+	SW2=`echo "$LAT <= 32.0" | bc -l`
+	SW3=`echo "$LON >= 47.0" | bc -l`
+	SW4=`echo "$LON <= 53.0" | bc -l`
 	
 	TH1=`echo "$LAT >= 34.5" | bc -l`
-	TH2=`echo "$LAT <= 36.5" | bc -l`
-	TH3=`echo "$LON >= 50.2" | bc -l`
+	TH2=`echo "$LAT <= 37.0" | bc -l`
+	TH3=`echo "$LON >= 49.5" | bc -l`
 	TH4=`echo "$LON <= 53.5" | bc -l`
 	
-	MI1=`echo "$LAT >= 26.3" | bc -l`
-	MI2=`echo "$LAT <= 28.3" | bc -l`
-	MI3=`echo "$LON >= 55.5" | bc -l`
-	MI4=`echo "$LON <= 58.0" | bc -l`
-	
-	LO1=`echo "$LAT >= 33.0" | bc -l`
-	LO2=`echo "$LAT <= 34.7" | bc -l`
-	LO3=`echo "$LON >= 46.7" | bc -l`
-	LO4=`echo "$LON <= 49.9" | bc -l`
-	
-	TA1=`echo "$LAT >= 36.7" | bc -l`
-	TA2=`echo "$LAT <= 39.5" | bc -l`
-	TA3=`echo "$LON >= 44.4" | bc -l`
-	TA4=`echo "$LON <= 48.5" | bc -l`	
-	
-	SK1=`echo "$LAT >= 30.7" | bc -l`
-	SK2=`echo "$LAT <= 32.8" | bc -l`
-	SK3=`echo "$LON >= 49.7" | bc -l`
-	SK4=`echo "$LON <= 52.2" | bc -l`	
-
-	GFDB_DIR="$GFDB/IRAN/1"
-	MAXDP=85	
-	MAXDI=1500			
+	if [ "$SW1" -eq "1" ] && [ "$SW2" -eq "1" ] && [ "$SW3" -eq "1" ] && [ "$SW4" -eq "1" ]; then
+		GFDB_DIR="$GFDB/SW"
+		MAXDP=60
+		MAXDI=1500
+	elif [ "$TH1" -eq "1" ] && [ "$TH2" -eq "1" ] && [ "$TH3" -eq "1" ] && [ "$TH4" -eq "1" ]; then
+		GFDB_DIR="$GFDB/TEH"
+		MAXDP=35	
+		MAXDI=500
+	else
+		GFDB_DIR="$GFDB/IRAN"
+		MAXDP=85	
+		MAXDI=1500
+	fi			
 	
 	
 	DC_INV_MOD="invert_dmsdsok"
@@ -181,17 +171,17 @@ AUTO_SET_KIWI_PARAM ()
 			FM=(0.05 0.05 0.09 0.09)
 			n=2
 			data_count=21		# OMIT_NOISY activation limit
-			active_smooth="no"    
+			active_smooth="no"      # Activate Station_Smoothing procedure
 			frac=3
 			DISLIM=3	
-			LEVEL_RELAMP="4"
-			TR_S2_LIM="5"
+			LEVEL_RELAMP="4"	# Value of LEVEL_RELAMP parameter in KIWI tools
+			TR_S2_LIM="5"		# Minimum number of low-misfit traces for step2 
 			NE=20000; NES=1500
 			SCA_MOM1="7.5e15"
 			SCA_MOM2="4.0e16"	
 			SCA_STEP="1.0e15"						
 			MAX_DIS=450
-			MAXLOC=450
+			MAXLOC=250
 			MIN_DIS=5
 			MAX_DEP=`echo "$DEP + 20" | bc -l`		
 			T1=-1; T2=2.5; TS=0.2; CC=10
@@ -212,7 +202,7 @@ AUTO_SET_KIWI_PARAM ()
 			SCA_MOM2="3.5e17"	
 			SCA_STEP="1.0e16"						
 			MAX_DIS=550
-			MAXLOC=550
+			MAXLOC=350
 			MIN_DIS=30
 			MAX_DEP=`echo "$DEP + 25" | bc -l`			
 			T1=-1; T2=4.0; TS=0.2; CC=10
@@ -234,7 +224,7 @@ AUTO_SET_KIWI_PARAM ()
 			SCA_MOM2="3.5e17"	
 			SCA_STEP="1.0e16"						
 			MAX_DIS=650
-			MAXLOC=650
+			MAXLOC=450
 			MIN_DIS=50
 			MAX_DEP=`echo "$DEP + 25" | bc -l`			
 			T1=-1; T2=5.0; TS=0.2; CC=10
@@ -256,7 +246,7 @@ AUTO_SET_KIWI_PARAM ()
 			SCA_MOM2="9.5e17"	
 			SCA_STEP="1.0e17"						
 			MAX_DIS=900
-			MAXLOC=900
+			MAXLOC=600
 			MIN_DIS=75			
 			MAX_DEP=`echo "$DEP + 30" | bc -l`			
 			T1=-2; T2=7.0; TS=0.2; CC=10
@@ -278,7 +268,7 @@ AUTO_SET_KIWI_PARAM ()
 			SCA_MOM2="4.0e19"	
 			SCA_STEP="1.0e18"			
 			MAX_DIS=1300
-			MAXLOC=1300
+			MAXLOC=1000
 			MIN_DIS=300
 			MAX_DEP=`echo "$DEP + 40" | bc -l`
 			T1=-2; T2=10.0; TS=0.5; CC=15
@@ -299,7 +289,7 @@ AUTO_SET_KIWI_PARAM ()
 			SCA_MOM2="4.0e19"	
 			SCA_STEP="1.0e18"			
 			MAX_DIS=1300
-			MAXLOC=1300
+			MAXLOC=1000
 			MIN_DIS=350
 			MAX_DEP=`echo "$DEP + 30" | bc -l`
 			T1=-2; T2=15.0; TS=1; CC=15			
@@ -321,7 +311,7 @@ AUTO_SET_KIWI_PARAM ()
 			SCA_MOM2="3.5e20"	
 			SCA_STEP="1.0e19"			
 			MAX_DIS=1300
-			MAXLOC=1300
+			MAXLOC=1000
 			MIN_DIS=450
 			MAX_DEP=`echo "$DEP + 40" | bc -l`
 			T1=-2; T2=20.0; TS=1; CC=20
