@@ -3,9 +3,13 @@ KIWISC3
 A Bash code to link Seiscomp3 to KIWI tools for automatic (Online) source analysis.
 
 New version of Source_Analysis code (2019,Jul 1) with following features released:
+
 1- Precedure for a quick approximation of Mw
+
 2- 2 methods to execlude high-misfit data from inversion step2
+
 2-1 Omitting a range of High_Misfit data considering a minimum allowed number of traces for step2.
+
 2-2 Keeping a range of best fitted data considering a minimum allowed number of traces for step2.
 
 Requirements
