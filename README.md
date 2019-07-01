@@ -6,7 +6,7 @@ New version of Source_Analysis code (2019,Jul 1) with following features release
 
 1- Precedure for a quick approximation of Mw
 
-2- 2 methods to execlude high-misfit data from inversion step2
+2- Two methods to execlude high-misfit data from inversion step2
 
 2-1 Omitting a range of High_Misfit data considering a minimum allowed number of traces for step2.
 
