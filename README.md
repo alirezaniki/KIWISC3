@@ -27,7 +27,7 @@ Create these directories in the KIWISC3 main directory:
 
 - Set the Proper Paths in both main codes.
 
-- You may need to alter the code (Source_Analysis lines 134 - 156) to define your own GFDB's in specific conditions.
+- You may need to alter the code (Source_Analysis lines 141 - 163) to define your own GFDB's in specific conditions.
 
 - Response files must be stored in RESP.$NET.$STA.$LOC.$CHAN name format.
 
