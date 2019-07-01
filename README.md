@@ -1,11 +1,18 @@
-# KIWISC3
+KIWISC3
+------
 A Bash code to link Seiscomp3 to KIWI tools for automatic (Online) source analysis.
 
-# Requirements
+New version of Source_Analysis with following features released:
+1- Precedure for a quick approximation of Mw
+2- 2 methods to execlude high-misfit data from inversion step2
+
+Requirements
+------------
 
 - Seiscomp3, KIWI, Pyrocko, GMT 5 
 
-# Notes
+Notes
+-----
 
 Create these directories in the KIWISC3 main directory:
 
@@ -13,7 +20,7 @@ Create these directories in the KIWISC3 main directory:
 
 2- RESP = Put your Response files in this Folder
 
-3- RESULTS/SUMMARY/Map_All
+3- RESULTS/SUMMARY/Map_All (mkdir -p RESULTS/SUMMARY/Map_All)
 
 
 - Set the Proper Paths in both main codes.
