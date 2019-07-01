@@ -21,7 +21,7 @@ Requirements
 Notes
 -----
 
-Create these directories in the KIWISC3 main directory:
+- Create these directories in the KIWISC3 main directory:
 
 1- GFDB = put your Greens Functions in this Folder
 
