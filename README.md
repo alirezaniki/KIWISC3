@@ -4,7 +4,7 @@ A Bash code to link Seiscomp3 to KIWI tools for automatic (Online) source analys
 
 New version of Source_Analysis code (2019,Jul 1) with following features released:
 
-1- Precedure for a quick approximation of Mw
+1- Procedure for a quick approximation of Mw before source analysis
 
 2- Two methods to execlude high-misfit data from inversion step2
 
