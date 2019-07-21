@@ -176,6 +176,7 @@ AUTO_SET_KIWI_PARAM ()
 			DISLIM=3	
 			LEVEL_RELAMP="4"	# Value of LEVEL_RELAMP parameter in KIWI tools
 			TR_S2_LIM="5"		# Minimum number of low-misfit traces for step2 
+			MISFIT_S2="yes"		# Whether to active MISFIT function or not!
 			NE=20000; NES=1500
 			SCA_MOM1="7.5e15"
 			SCA_MOM2="4.0e16"	
@@ -197,6 +198,7 @@ AUTO_SET_KIWI_PARAM ()
 			active_smooth="no"   
 			LEVEL_RELAMP="5" 
 			TR_S2_LIM="6"
+			MISFIT_S2="yes"
 			NE=20000; NES=1500
 			SCA_MOM1="2.0e16"
 			SCA_MOM2="3.5e17"	
@@ -219,6 +221,7 @@ AUTO_SET_KIWI_PARAM ()
 			active_smooth="no"  
 			LEVEL_RELAMP="5" 
 			TR_S2_LIM="8"
+			MISFIT_S2="yes"
 			NE=25000; NES=2000
 			SCA_MOM1="2.0e16"
 			SCA_MOM2="3.5e17"	
@@ -241,6 +244,7 @@ AUTO_SET_KIWI_PARAM ()
 			active_smooth="yes"     
 			LEVEL_RELAMP="5" 
 			TR_S2_LIM="10" 
+			MISFIT_S2="yes"
 			NE=30000; NES=2000
 			SCA_MOM1="1.5e17"
 			SCA_MOM2="9.5e17"	
@@ -263,6 +267,7 @@ AUTO_SET_KIWI_PARAM ()
 			active_smooth="no"   
 			LEVEL_RELAMP="8" 
 			TR_S2_LIM="12"
+			MISFIT_S2="yes"
 			NE=40000; NES=2500
 			SCA_MOM1="8.5e17"
 			SCA_MOM2="4.0e19"	
@@ -284,6 +289,7 @@ AUTO_SET_KIWI_PARAM ()
 			active_smooth="yes"    
 			LEVEL_RELAMP="10"
 			TR_S2_LIM="13"
+			MISFIT_S2="yes"
 			NE=45000; NES=2500
 			SCA_MOM1="8.5e17"
 			SCA_MOM2="4.0e19"	
@@ -306,6 +312,7 @@ AUTO_SET_KIWI_PARAM ()
 			active_smooth="yes"   
 			LEVEL_RELAMP="10" 
 			TR_S2_LIM="15"
+			MISFIT_S2="yes"
 			NE=55000; NES=3000
 			SCA_MOM1="2.0e19"
 			SCA_MOM2="3.5e20"	
@@ -792,7 +799,7 @@ PROCESS ()
 	cp -f $BEST_DIR/$File $WORK
 	cd $WORK
 	
-	MISFIT2
+	[ "$MISFIT_S2" = "yes" ] && MISFIT2
 
 	Dep=`grep -w "3 10 10 0 0 5" $BEST_DIR/step1.earthquakeinfo.dat | cut -f 7 -d " "` && Dep=${Dep::-2}
 	Str=`grep -w "3 15 10 0 0 5" $BEST_DIR/step1.earthquakeinfo.dat | cut -f 7 -d " "` && Str=`echo $Str | cut -f 1 -d "."`
