@@ -2,8 +2,8 @@
 
 ############### Directories
 
-export SC3_HOME="/home/alireza/seiscomp3"
-export KIWI="$SC3_HOME/KIWISC3"
+export SC3_HOME="/home/irsc/seiscomp3"
+export KIWI="$SC3_HOME/kiwisc3"
 export DATA="$KIWI/DATA"
 export WORK="$KIWI/WORK"
 export GFDB="$KIWI/GFDB"
@@ -14,7 +14,6 @@ export PYROCKO="$KIWI/PYROCKO"
 #frac=n          is the fraction of stations to be subject to removal in each iteration ( N = num_st / $frac )
 #DISLIM=m        is a clearance distance around removed stations preventing that two close-by stations are
 #			     simultaneously removed in a single iteration (DISTANCLIMIT = $MDI * $DISLIM)  
-
 
 
 ############### Functions
@@ -29,7 +28,7 @@ export OMIT_NOISY="False"
 export WEIGHT_DIST="False"
 export FULLMT="False"
 export LEVEL_S2N="0.85"
-export NOISE_WINDOW="before"
+export NOISE_WINDOW="after"
 export EVALUATE_MW="yes"
 }
 
@@ -48,7 +47,7 @@ echo $(printf %.$2f $(echo "scale=$2;(((10^$2)*$1)+0.5)/(10^$2)" | bc))
 
 SMOOTH_STATIONS ()
 {
-	cd $DATA/$EVENT/DISP
+	cd $DATA/$EVENT/DISP/best
  
 	sed -i "/e =/c\e = model.Event(lat=$LAT, lon=$LON)" $PYROCKO/dist_azi_bazi.py 2> /dev/null
 	
@@ -135,190 +134,253 @@ SMOOTH_STATIONS ()
 		cd -
 }
 
+STATION_SELECTION ()
+{
+	[ -d $DATA/$EVENT/FAR ] && rm -f $DATA/$EVENT/FAR/* || mkdir $DATA/$EVENT/FAR 
+	cd $DATA/$EVENT/DISP 
+	cp $DATA/dist_azi_bazi.py $DATA/$EVENT
+	
+	sed -i "/e =/c\e = model.Event(lat=$LAT, lon=$LON)" ../dist_azi_bazi.py 2> /dev/null
+	for st in `ls DISPL*.IR.* DISPL*.BI.* | cut -f 3 -d "." | sort | uniq`; do
+		STLA=`grep -w "$st" $DATA/stations.dat | awk '{print $3}'`
+		STLO=`grep -w "$st" $DATA/stations.dat | awk '{print $4}'`
+		[ ! -n "$STLA" ] && continue
+		sed -i "/s =/c\s = model.Event(lat=$STLA, lon=$STLO)" ../dist_azi_bazi.py 2> /dev/null
+		DIST=`python ../dist_azi_bazi.py 2> /dev/null`
+		echo $st $DIST
+	done > st_dist.dat	
+	
+	cat st_dist.dat | while read info; do
+		ST=`echo $info | cut -f 1 -d " "`
+		DS=`echo $info | cut -f 2 -d " "`
+		(( `echo "$DS > $MAX_DIS_FAKE" | bc -l` )) && mv *$ST* ../FAR 2> /dev/null
+	done	
+}
+
 
 AUTO_SET_KIWI_PARAM ()
 {
 	SW1=`echo "$LAT >= 27.6" | bc -l`
-	SW2=`echo "$LAT <= 32.0" | bc -l`
-	SW3=`echo "$LON >= 47.0" | bc -l`
-	SW4=`echo "$LON <= 53.0" | bc -l`
+	SW2=`echo "$LAT <= 30.2" | bc -l`
+	SW3=`echo "$LON >= 51.5" | bc -l`
+	SW4=`echo "$LON <= 54.7" | bc -l`
 	
 	TH1=`echo "$LAT >= 34.5" | bc -l`
-	TH2=`echo "$LAT <= 37.0" | bc -l`
-	TH3=`echo "$LON >= 49.5" | bc -l`
+	TH2=`echo "$LAT <= 36.5" | bc -l`
+	TH3=`echo "$LON >= 50.2" | bc -l`
 	TH4=`echo "$LON <= 53.5" | bc -l`
 	
+	MI1=`echo "$LAT >= 26.3" | bc -l`
+	MI2=`echo "$LAT <= 28.3" | bc -l`
+	MI3=`echo "$LON >= 55.5" | bc -l`
+	MI4=`echo "$LON <= 58.0" | bc -l`
+	
+	LO1=`echo "$LAT >= 33.0" | bc -l`
+	LO2=`echo "$LAT <= 34.7" | bc -l`
+	LO3=`echo "$LON >= 46.7" | bc -l`
+	LO4=`echo "$LON <= 49.9" | bc -l`
+	
+	TA1=`echo "$LAT >= 36.7" | bc -l`
+	TA2=`echo "$LAT <= 39.5" | bc -l`
+	TA3=`echo "$LON >= 44.4" | bc -l`
+	TA4=`echo "$LON <= 48.5" | bc -l`	
+	
+	SK1=`echo "$LAT >= 30.7" | bc -l`
+	SK2=`echo "$LAT <= 32.8" | bc -l`
+	SK3=`echo "$LON >= 49.7" | bc -l`
+	SK4=`echo "$LON <= 52.2" | bc -l`
+
 	if [ "$SW1" -eq "1" ] && [ "$SW2" -eq "1" ] && [ "$SW3" -eq "1" ] && [ "$SW4" -eq "1" ]; then
-		GFDB_DIR="$GFDB/SW"
+		GFDB_DIR="$GFDB/SW/1"
 		MAXDP=60
 		MAXDI=1500
 	elif [ "$TH1" -eq "1" ] && [ "$TH2" -eq "1" ] && [ "$TH3" -eq "1" ] && [ "$TH4" -eq "1" ]; then
-		GFDB_DIR="$GFDB/TEH"
+		GFDB_DIR="$GFDB/TEH/1"
 		MAXDP=35	
 		MAXDI=500
-	else
-		GFDB_DIR="$GFDB/IRAN"
+	elif [ "$MI1" -eq "1" ] && [ "$MI2" -eq "1" ] && [ "$MI3" -eq "1" ] && [ "$MI4" -eq "1" ]; then
+		GFDB_DIR="$GFDB/Minab"
+		MAXDP=50	
+		MAXDI=1000
+	elif [ "$LO1" -eq "1" ] && [ "$LO2" -eq "1" ] && [ "$LO3" -eq "1" ] && [ "$LO4" -eq "1" ]; then
+		GFDB_DIR="$GFDB/Lorestan"
+		MAXDP=40	
+		MAXDI=1300		
+	elif [ "$TA1" -eq "1" ] && [ "$TA2" -eq "1" ] && [ "$TA3" -eq "1" ] && [ "$TA4" -eq "1" ]; then
+		GFDB_DIR="$GFDB/Tabriz"
+		MAXDP=50
+		MAXDI=1200	
+	elif [ "$SK1" -eq "1" ] && [ "$SK2" -eq "1" ] && [ "$SK3" -eq "1" ] && [ "$SK4" -eq "1" ]; then
+		GFDB_DIR="$GFDB/Shahre_Kord"
+		MAXDP=50	
+		MAXDI=1000	
+	else	
+		GFDB_DIR="$GFDB/IRAN/1"
 		MAXDP=85	
-		MAXDI=1500
-	fi			
+		MAXDI=1500		
+	fi		
 	
 	
 	DC_INV_MOD="invert_dmsdsok"
-				
-	if (( `echo "$MAG >= 4.00" | bc -l` )) && (( `echo "$MAG < 4.50" | bc -l` )) ; then		
-			F1=(0.05 0.05 0.08 0.08)
-			F2=(0.06 0.06 0.09 0.09)
-			FM=(0.05 0.05 0.09 0.09)
-			n=2
-			data_count=21		# OMIT_NOISY activation limit
-			active_smooth="no"      # Activate Station_Smoothing procedure
-			frac=3
-			DISLIM=3	
-			LEVEL_RELAMP="4"	# Value of LEVEL_RELAMP parameter in KIWI tools
-			TR_S2_LIM="5"		# Minimum number of low-misfit traces for step2 
-			MISFIT_S2="yes"		# Whether to active MISFIT function or not!
-			NE=20000; NES=1500
-			SCA_MOM1="7.5e15"
-			SCA_MOM2="4.0e16"	
-			SCA_STEP="1.0e15"						
-			MAX_DIS=450
-			MAXLOC=250
-			MIN_DIS=5
-			MAX_DEP=`echo "$DEP + 20" | bc -l`		
-			T1=-1; T2=2.5; TS=0.2; CC=10
-			
-	elif (( `echo "$MAG >= 4.50" | bc -l` )) && (( `echo "$MAG < 5.00" | bc -l` )) ; then		
-			F1=(0.04 0.04 0.07 0.07)
-			F2=(0.05 0.05 0.08 0.08)	
-			FM=(0.04 0.04 0.08 0.08)	
+
+
+	if (( `echo "$MAG >= 4.20" | bc -l` )) && (( `echo "$MAG < 4.50" | bc -l` )) ; then		
+			F1=(0.030 0.040 0.070 0.080)
+			F2=(0.040 0.050 0.080 0.090)
+			FM=(0.030 0.040 0.070 0.080)	
 			n=2
 			frac=3
 			DISLIM=2.5		
-			data_count=24
-			active_smooth="no"   
-			LEVEL_RELAMP="5" 
-			TR_S2_LIM="6"
-			MISFIT_S2="yes"
+			data_count=24			
+			active_smooth="no"   	# SMOOTH STATIONS?
+			LEVEL_RELAMP="2.5" 
+			TR_S2_LIM="6"  			# MISFIT FUNCTION CONFIG
+			MISFIT_S2="no"
+			NE=15000; NES=1500
+			SCA_MOM1="2.0e15"
+			SCA_MOM2="5.0e16"	
+			SCA_STEP="1.0e15"	
+			MAX_DIS_FAKE=400							
+			MAX_DIS=400
+			MAXLOC=250
+			MIN_DIS=20
+			MAX_DEP=`echo "$DEP + 25" | bc -l`	
+			T1=-1; T2=5.0; TS=0.2; CC=5				
+			
+	elif (( `echo "$MAG >= 4.50" | bc -l` )) && (( `echo "$MAG < 5.00" | bc -l` )) ; then		
+			F1=(0.030 0.040 0.070 0.080)
+			F2=(0.020 0.030 0.060 0.070)
+			FM=(0.030 0.040 0.070 0.080)	
+			n=2
+			frac=3
+			DISLIM=2.5		
+			data_count=24			
+			active_smooth="no"   	
+			LEVEL_RELAMP="2.5" 
+			TR_S2_LIM="6"  			
+			MISFIT_S2="no"
 			NE=20000; NES=1500
 			SCA_MOM1="2.0e16"
 			SCA_MOM2="3.5e17"	
-			SCA_STEP="1.0e16"						
-			MAX_DIS=550
-			MAXLOC=350
-			MIN_DIS=30
-			MAX_DEP=`echo "$DEP + 25" | bc -l`			
-			T1=-1; T2=4.0; TS=0.2; CC=10
+			SCA_STEP="1.0e16"	
+			MAX_DIS_FAKE=500							
+			MAX_DIS=500
+			MAXLOC=300
+			MIN_DIS=50
+			MAX_DEP=`echo "$DEP + 25" | bc -l`	
+			T1=-1; T2=5.0; TS=0.2; CC=5
 			
 	elif (( `echo "$MAG >= 5.00" | bc -l` )) && (( `echo "$MAG < 5.50" | bc -l` )) ; then		
-			F1=(0.02 0.02 0.05 0.05)
-			F2=(0.025 0.025 0.055 0.055)
-			F3=(0.03 0.03 0.06 0.06)
-			FM=(0.030 0.030 0.070 0.070)
+			F1=(0.020 0.030 0.060 0.070)
+			F2=(0.010 0.020 0.050 0.060)
+			F3=(0.010 0.020 0.060 0.070)
+			FM=(0.020 0.030 0.060 0.070)
 			n=3
 			frac=3
 			DISLIM=2.5		
 			data_count=24
 			active_smooth="no"  
-			LEVEL_RELAMP="5" 
-			TR_S2_LIM="8"
-			MISFIT_S2="yes"
+			LEVEL_RELAMP="2.5" 
+			TR_S2_LIM="10"
+			MISFIT_S2="no"
 			NE=25000; NES=2000
 			SCA_MOM1="2.0e16"
 			SCA_MOM2="3.5e17"	
-			SCA_STEP="1.0e16"						
-			MAX_DIS=650
-			MAXLOC=450
-			MIN_DIS=50
+			SCA_STEP="1.0e16"	
+			MAX_DIS_FAKE=600							
+			MAX_DIS=1500
+			MAXLOC=350
+			MIN_DIS=100
 			MAX_DEP=`echo "$DEP + 25" | bc -l`			
-			T1=-1; T2=5.0; TS=0.2; CC=10
+			T1=-1; T2=7.0; TS=0.5; CC=10
 
 	elif (( `echo "$MAG >= 5.50" | bc -l` )) && (( `echo "$MAG < 6.00" | bc -l` )) ; then		
 			F1=(0.015 0.015 0.045 0.045)
-			F2=(0.02 0.02 0.045 0.045)
-			F3=(0.02 0.02 0.05 0.05)
-			FM=(0.020 0.020 0.060 0.060)
+			F2=(0.020 0.020 0.050 0.050)
+			F3=(0.030 0.030 0.060 0.060)
+			FM=(0.025 0.025 0.055 0.055)
 			n=3
 			frac=2
 			DISLIM=2
 			data_count=24   
-			active_smooth="yes"     
-			LEVEL_RELAMP="5" 
-			TR_S2_LIM="10" 
-			MISFIT_S2="yes"
+			active_smooth="no"     
+			LEVEL_RELAMP="2.5" 
+			TR_S2_LIM="12" 
+			MISFIT_S2="no"
 			NE=30000; NES=2000
 			SCA_MOM1="1.5e17"
 			SCA_MOM2="9.5e17"	
-			SCA_STEP="1.0e17"						
-			MAX_DIS=900
-			MAXLOC=600
-			MIN_DIS=75			
+			SCA_STEP="1.0e17"	
+			MAX_DIS_FAKE=700
+			MAX_DIS=1500
+			MAXLOC=450
+			MIN_DIS=125			
 			MAX_DEP=`echo "$DEP + 30" | bc -l`			
-			T1=-2; T2=7.0; TS=0.2; CC=10
+			T1=-2; T2=9.0; TS=1; CC=10
 
 	elif (( `echo "$MAG >= 6.00" | bc -l` )) && (( `echo "$MAG < 6.50" | bc -l` )) ; then				
-			F1=(0.005 0.005 0.02 0.02)
-			F2=(0.01 0.01 0.035 0.035)
-			F3=(0.01 0.01 0.04 0.04)
-			FM=(0.005 0.005 0.040 0.040)
+			F1=(0.005 0.005 0.030 0.030)
+			F2=(0.010 0.010 0.040 0.040)
+			F3=(0.020 0.020 0.050 0.050)
+			FM=(0.010 0.010 0.040 0.040)
 			n=3
 			frac=2
 			DISLIM=2
 			data_count=24
 			active_smooth="no"   
-			LEVEL_RELAMP="8" 
-			TR_S2_LIM="12"
-			MISFIT_S2="yes"
+			LEVEL_RELAMP="3" 
+			TR_S2_LIM="10"
+			MISFIT_S2="no"
 			NE=40000; NES=2500
 			SCA_MOM1="8.5e17"
 			SCA_MOM2="4.0e19"	
-			SCA_STEP="1.0e18"			
-			MAX_DIS=1300
-			MAXLOC=1000
+			SCA_STEP="1.0e18"	
+			MAX_DIS_FAKE=800				
+			MAX_DIS=1500
+			MAXLOC=1500
 			MIN_DIS=300
 			MAX_DEP=`echo "$DEP + 40" | bc -l`
-			T1=-2; T2=10.0; TS=0.5; CC=15
+			T1=-2; T2=12.0; TS=1; CC=15
 
 	elif (( `echo "$MAG >= 6.50" | bc -l` )) && (( `echo "$MAG < 7.00" | bc -l` )) ; then				
-			F1=(0.005 0.005 0.03 0.03)
-			F2=(0.01 0.01 0.040 0.040)
+			F1=(0.005 0.005 0.030 0.030)
+			F2=(0.010 0.010 0.040 0.040)
 			FM=(0.005 0.005 0.035 0.035)
 			n=2
 			frac=2
 			DISLIM=2
 			data_count=24
-			active_smooth="yes"    
-			LEVEL_RELAMP="10"
-			TR_S2_LIM="13"
-			MISFIT_S2="yes"
+			active_smooth="no"    
+			LEVEL_RELAMP="4"
+			TR_S2_LIM="12"
 			NE=45000; NES=2500
 			SCA_MOM1="8.5e17"
 			SCA_MOM2="4.0e19"	
-			SCA_STEP="1.0e18"			
-			MAX_DIS=1300
-			MAXLOC=1000
+			SCA_STEP="1.0e18"	
+			MAX_DIS_FAKE=850				
+			MAX_DIS=1500
+			MAXLOC=1500
 			MIN_DIS=350
 			MAX_DEP=`echo "$DEP + 30" | bc -l`
-			T1=-2; T2=15.0; TS=1; CC=15			
+			T1=-2; T2=15.0; TS=1; CC=20		
 	
 	else
 			F1=(0.005 0.005 0.020 0.020)
-			F2=(0.005 0.005 0.025 0.025)
-			F3=(0.010 0.010 0.035 0.035)
-			FM=(0.005 0.005 0.030 0.030)
-			n=3
+			FM=(0.005 0.005 0.020 0.020)
+			n=1
 			frac=2
 			DISLIM=2	
 			data_count=24
-			active_smooth="yes"   
-			LEVEL_RELAMP="10" 
+			active_smooth="no"   
+			LEVEL_RELAMP="4" 
 			TR_S2_LIM="15"
-			MISFIT_S2="yes"
 			NE=55000; NES=3000
 			SCA_MOM1="2.0e19"
 			SCA_MOM2="3.5e20"	
-			SCA_STEP="1.0e19"			
-			MAX_DIS=1300
-			MAXLOC=1000
+			SCA_STEP="1.0e19"
+			MAX_DIS_FAKE=900					
+			MAX_DIS=1500
+			MAXLOC=900
 			MIN_DIS=450
 			MAX_DEP=`echo "$DEP + 40" | bc -l`
 			T1=-2; T2=20.0; TS=1; CC=20
@@ -405,74 +467,24 @@ MISFIT ()
 {
 	cd $BEST_DIR
 	[ -d $DATA/$EVENT/HMD ] && rm -f $DATA/$EVENT/HMD/* || mkdir $DATA/$EVENT/HMD 
-	read -a DISPS <<< `ls dcdseif1-*`
-	read -a SYNTS <<< `ls dcsseif1-*`
+	[ -d $DATA/$EVENT/NOK ] && rm -f $DATA/$EVENT/NOK/* || mkdir $DATA/$EVENT/NOK 
 	
-	for ((i=0; i < ${#DISPS[@]}; i++)); do
-		DISP=${DISPS[$i]}
-		SYNT=${SYNTS[$i]}
-		L=`cat $DISP | wc -l`
-		
-		SUMup=0
-		SUMdw=0
-		
-		for ((j=1; j <= $L; j++)); do
-			ampd=`awk -v j=$j 'NR==j {print $2}' $DISP` && ampd=`printf "%.10f\n" $ampd`
-			amps=`awk -v j=$j 'NR==j {print $2}' $SYNT` && amps=`printf "%.10f\n" $amps`
-			
-			up=`echo "($amps - $ampd) * ($amps - $ampd)" | bc -l`
-			SUMup=`echo "$SUMup + $up" | bc -l`
-			
-			dw=`echo "$ampd * $ampd" | bc -l`
-			SUMdw=`echo "$SUMdw + $dw" | bc -l`
-		done
-
-		misfit=`echo "scale=3; $SUMup / $SUMdw" | bc -l`	
-		echo "$DISP  $SYNT  $misfit"
-		
-	done > misfit-info.dat
-	
-	N_Remove=`echo "$All-Tr * 2 / 3" | bc -l` && N_Remove=${N_Remove%%.*}
-	
-	[ "$N_Remain" -le 5 ] && N_Remove=`echo "$All-Tr / 2" | bc -l` && N_Remove=${N_Remove%%.*}
-	
-	All_Tr=`cat misfit-info.dat | wc -l`
-		
-	for i in 0.9 0.8 0.7 0.6 0.4 0.2; do
-		N_Remove=`echo "$All_Tr * $i" | bc -l` && N_Remove=${N_Remove%%.*}
-		N_Remain=`echo "$All_Tr - $N_Remove" | bc -l`
-		[ "$N_Remain" -ge "$TR_S2_LIM" ] && break
-	done	
-
-	cat misfit-info.dat | sort -n -k 3 | tail -"$N_Remove" | while read info; do
-		Tr_No=`echo $info | awk '{print $1}' | cut -f 2 -d -`
-		Tr_Co=`echo $info | awk '{print $1}' | cut -f 3 -d - | cut -f 1 -d .`
-			
-		LAT=`awk -v i=$Tr_No 'NR==i {print $1}' stations.table.mec`
-		LON=`awk -v i=$Tr_No 'NR==i {print $2}' stations.table.mec`
-		STA=`grep -w "$LAT $LON" stations.used | cut -f 2 -d " "`
-	
-		case $Tr_Co in
+	cat stations.unused | while read line; do
+		sta=`echo $line | cut -f 1 -d " "`
+		comp=`echo $line | cut -f 2 -d " "`
+		case $comp in
 			u)
 				Comp="Z" ;;
 			n)
 				Comp="N" ;;
 			e)
 				Comp="E" ;;
-		esac		
+		esac
 		
-		mv $DATA/$EVENT/DISP/*$STA*$Comp $DATA/$EVENT/HMD 
+		echo $sta $Comp
+		mv $DATA/$EVENT/DISP/*$sta*$Comp $DATA/$EVENT/NOK 
 	done	
 	
-	cp misfit-info.dat ../
-	cd $WORK	
-}
-
-
-MISFIT2 ()
-{
-	cd $BEST_DIR
-	[ -d $DATA/$EVENT/HMD ] && rm -f $DATA/$EVENT/HMD/* || mkdir $DATA/$EVENT/HMD 
 	read -a DISPS <<< `ls dcdseif1-*`
 	read -a SYNTS <<< `ls dcsseif1-*`
 	
@@ -501,7 +513,7 @@ MISFIT2 ()
 	done > misfit-info.dat
 	
 		
-	for i in `seq 0.4 0.1 3`; do
+	for i in `seq 0.3 0.1 3`; do
 		awk -v i=$i '$3 <= i {print $0}' misfit-info.dat > best_Misfit.dat
 		[ `cat best_Misfit.dat | wc -l` -ge "$TR_S2_LIM" ] && break
 	done	
@@ -527,8 +539,8 @@ MISFIT2 ()
 		esac		
 		
 		mv $DATA/$EVENT/DISP/*$STA*$Comp $DATA/$EVENT/HMD 
-	done	
-	
+	done		
+		
 	cp misfit-info.dat ../
 	cd $WORK	
 }
@@ -638,7 +650,7 @@ MAP ()
 	(( `echo "$RN < 0" | bc -l` )) && RNM=S && RN=`echo "$RN * -1" | bc -l` || RNM=N
 	(( `echo "$RE < 0" | bc -l` )) && REM=W && RE=`echo "$RE * -1" | bc -l` || REM=E
 	
-	echo "$MF $MF1 $LAT $LON $S1 $D1 $R1" >> $KIWI/RESULTS/SUMMARY/Map-All/info
+	echo "$LON $LAT ${DP%km*} $S1 $D1 $R1 $Mw $LON $LAT" >> $KIWI/RESULTS/SUMMARY/Map-All/info
 		
 	gmt pstext -X16.2 -Y6.0 -JX10/7 -R0/14/0/32 -K -O 2> /dev/null <<- END >> $RESULTS/SUMMARY/"$EVENT".ps	
 	0 30 13 0 0 5 Epicenter 
@@ -681,7 +693,15 @@ MAP ()
 	gmt pstext -W.0.2,black -C0.2c/0.2c -Y-0.9 -X0 -JX8/3 -R-1/8/-1/2 -K -O <<- EOF >> $RESULTS/SUMMARY/"$EVENT".ps	
 	0 00 11 0 0 5 Station.No = $NUM_ST
 	EOF
-
+	
+	DAte=`date -u +"%Y-%m-%d %H:%M:%S" | cut -f 1 -d " "`
+	TIme=`date -u +"%Y-%m-%d %H:%M:%S" | cut -f 2 -d " "`
+	D2=`date -d "$DAte $TIme" +%s`
+	D1=`date -d "$DATE $TIME" +%s`
+	duS=`echo "$D2 - $D1" | bc -l`
+	duM=`echo "scale=0; $duS / 60" | bc -l`
+	mv $RESULTS/SUMMARY/"$EVENT".ps	$RESULTS/SUMMARY/"$EVENT"-"$duM".ps	
+	
 	rm ./gmt.history 2> /dev/null
 	[ "$SMB_BK" = "True" ] && SMB_BK
 	cd $KIWI/RESULTS/SUMMARY/Map-All
@@ -700,18 +720,21 @@ MW_EVALUATION ()
 	############ Temp configs
 	FREQ=FM[@]
 	read -a FILTER <<< ${!FREQ}
-	DC_INV_MOD="invert_m"
+	DC_INV_MOD="invert_dmsds"
 	############
 	KIWI_SETUP
-	./rapidinv $File
-	export MAG=`grep "3 11 10 0 0 5" $RESULTS/$EVENT/${FILTER[1]}-${FILTER[2]}/step1.earthquakeinfo.dat | cut -f 7 -d " "`	
+	sed -i "/\<INVERSION_DIR\>/c\INVERSION_DIR   $RESULTS/$EVENT/${FILTER[1]}-${FILTER[2]}-MW" $File 2> /dev/null
+	sed -i "/\<SW_FILTERNOISY\>/c\SW_FILTERNOISY  True"  $File  2> /dev/null
+	./rapidinv $File	
+	export MAG=`grep "3 11 10 0 0 5" $RESULTS/$EVENT/${FILTER[1]}-${FILTER[2]}-MW/step1.earthquakeinfo.dat | cut -f 7 -d " "`
+	echo $MAG > $RESULTS/$EVENT/MW.dat
+	rm -rf $RESULTS/$EVENT/${FILTER[1]}-${FILTER[2]}-MW
 	rm -f $File 
 }
 
 
 STATIONS.DAT ()
 {
-	cd $DATA/$EVENT/DISP
 	rm .marked 2> /dev/null
 	i=0
 	for data in `ls DISPL*`; do
@@ -732,6 +755,7 @@ EVENT_INFO ()
 		Y=`echo $EVENT | cut -f 1 -d "-"`
 		M=`echo $EVENT | cut -f 2 -d "-"`
 		D=`echo $EVENT | cut -f 3 -d "-"`
+		DATE="$Y-$M-$D"
 		TIME=`echo $EVENT | cut -f 4 -d "-"`
 		h=${TIME:0:2}
 		m=${TIME:3:2}
@@ -765,8 +789,8 @@ PROCESS ()
 	
 	for EV_RES in `ls -d -1 $RESULTS/$EVENT/*`; do
 		[ ! -f  $EV_RES/step1.earthquakeinfo.dat ] && continue
-		MF1=`grep "3 8 10 0 0" $EV_RES/step1.earthquakeinfo.dat 2> /dev/null | cut -f 7 -d " "`
-		echo "$EV_RES $MF1" 
+		MF=`grep "3 8 10 0 0" $EV_RES/step1.earthquakeinfo.dat 2> /dev/null | cut -f 7 -d " "`
+		echo "$EV_RES $MF" 
 	done > .eve_summ       # >> Best BP Filter
 	
 	
@@ -799,7 +823,7 @@ PROCESS ()
 	cp -f $BEST_DIR/$File $WORK
 	cd $WORK
 	
-	[ "$MISFIT_S2" = "yes" ] && MISFIT2
+	[ "$MISFIT_S2" = "yes" ] && MISFIT
 
 	Dep=`grep -w "3 10 10 0 0 5" $BEST_DIR/step1.earthquakeinfo.dat | cut -f 7 -d " "` && Dep=${Dep::-2}
 	Str=`grep -w "3 15 10 0 0 5" $BEST_DIR/step1.earthquakeinfo.dat | cut -f 7 -d " "` && Str=`echo $Str | cut -f 1 -d "."`
@@ -836,7 +860,13 @@ while true; do
 		sed -i "/$EVENT/d" .ready_data	
 		CONFIG
 		AUTO_SET_KIWI_PARAM
+		STATION_SELECTION
 		[ "$EVALUATE_MW" = "yes" ] && MW_EVALUATION
+		mW=`cat $RESULTS/$EVENT/MW.dat`
+		[[ ! -s  $KIWI/.Mth.dat ]] || [[ "$mW" -lt `cat $KIWI/.Mth.dat` ]] && continue
+		Mup=`echo "$MAG + 0.35" | bc -l`
+		Mdn=`echo "$MAG - 0.35" | bc -l`
+		(( `echo "$mW < $Mdn" | bc -l` )) || (( `echo "$mW > $Mup" | bc -l` )) && continue
 		[[ `ls $DATA/$EVENT/DISP/DISPL* | wc -l` -gt "$SMOOTH_NUM_LIM" ]] && [[ "$active_smooth" = "yes" ]] && SMOOTH_STATIONS
 		STATIONS.DAT
 		AUTO_SET_KIWI_PARAM
