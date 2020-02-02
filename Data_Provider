@@ -1,18 +1,19 @@
 #!/bin/bash
 
 ################ DIRECTORIES
-SC3_HOME="/home/kiwi/seiscomp3"
-KIWI_HOME="$SC3_HOME/KIWISC3"
+SC3_HOME="/home/irsc/seiscomp3"
+KIWI_HOME="$SC3_HOME/kiwisc3"
 RESP="$KIWI_HOME/RESP"
 DATA="$SC3_HOME/data"
 
 ################ CONFIG
 Country="Iran"
-HOST="192.168.127.68"  # SC3 Host address
-length_lim=100         # Length limit for data deletion
-MAGLIM=4.2			   # Magnitude limit
+HOST="192.168.127.36"  # SC3 Host address
+length_lim=50          # Length limit for data deletion
+MAGLIM=4.50			   # Magnitude limit
 TIME1=10		 	   # End time 
-TIME2=20	     	   # Start time 
+TIME2=15    	       # Start time 
+Data_Lim=15
 sleep=`echo "($TIME2 - $TIME1) * 60" | bc -l`
 	
 
@@ -46,34 +47,100 @@ GET_EVE_INFO ()
 		
 		# Select the proper Sampling Rate and maximum depth based on the GFDB used
 		SW1=`echo "$EVELA >= 27.6" | bc -l`
-		SW2=`echo "$EVELA <= 32.0" | bc -l`
-		SW3=`echo "$EVELO >= 47.0" | bc -l`
-		SW4=`echo "$EVELO <= 53.0" | bc -l`
+		SW2=`echo "$EVELA <= 30.2" | bc -l`
+		SW3=`echo "$EVELO >= 51.5" | bc -l`
+		SW4=`echo "$EVELO <= 54.7" | bc -l`
 	
 		TH1=`echo "$EVELA >= 34.5" | bc -l`
-		TH2=`echo "$EVELA <= 37.0" | bc -l`
-		TH3=`echo "$EVELO >= 49.5" | bc -l`
+		TH2=`echo "$EVELA <= 36.5" | bc -l`
+		TH3=`echo "$EVELO >= 50.2" | bc -l`
 		TH4=`echo "$EVELO <= 53.5" | bc -l`
 	
+		MI1=`echo "$EVELA >= 26.3" | bc -l`
+		MI2=`echo "$EVELA <= 28.3" | bc -l`
+		MI3=`echo "$EVELO >= 55.5" | bc -l`
+		MI4=`echo "$EVELO <= 58.0" | bc -l`
+	
+		LO1=`echo "$EVELA >= 33.0" | bc -l`
+		LO2=`echo "$EVELA <= 34.7" | bc -l`
+		LO3=`echo "$EVELO >= 46.7" | bc -l`
+		LO4=`echo "$EVELO <= 49.9" | bc -l`
+	
+		TA1=`echo "$EVELA >= 36.7" | bc -l`
+		TA2=`echo "$EVELA <= 39.5" | bc -l`
+		TA3=`echo "$EVELO >= 44.4" | bc -l`
+		TA4=`echo "$EVELO <= 48.5" | bc -l`	
+	
+		SK1=`echo "$EVELA >= 30.7" | bc -l`
+		SK2=`echo "$EVELA <= 32.8" | bc -l`
+		SK3=`echo "$EVELO >= 49.7" | bc -l`
+		SK4=`echo "$EVELO <= 52.2" | bc -l`
+	
 		if [ "$SW1" -eq "1" ] && [ "$SW2" -eq "1" ] && [ "$SW3" -eq "1" ] && [ "$SW4" -eq "1" ]; then
-			DEC=2
+			DEC=1
 			MAX_DEP="60"
-			freql=(0.005 0.008 0.8 0.9)
+			freql=(0.002 0.005 0.4 0.45)
 		elif [ "$TH1" -eq "1" ] && [ "$TH2" -eq "1" ] && [ "$TH3" -eq "1" ] && [ "$TH4" -eq "1" ]; then
-			DEC=10
+			DEC=1
 			MAX_DEP="35"
-			freql=(0.005 0.008 4.0 4.5)
+			freql=(0.002 0.005 0.4 0.45)
+		elif [ "$MI1" -eq "1" ] && [ "$MI2" -eq "1" ] && [ "$MI3" -eq "1" ] && [ "$MI4" -eq "1" ]; then
+			DEC=1
+			MAX_DEP="50"
+			freql=(0.002 0.005 0.4 0.45)
+		elif [ "$LO1" -eq "1" ] && [ "$LO2" -eq "1" ] && [ "$LO3" -eq "1" ] && [ "$LO4" -eq "1" ]; then
+			DEC=1
+			MAX_DEP="40"
+			freql=(0.002 0.005 0.4 0.45)
+		elif [ "$TA1" -eq "1" ] && [ "$TA2" -eq "1" ] && [ "$TA3" -eq "1" ] && [ "$TA4" -eq "1" ]; then
+			DEC=1
+			MAX_DEP="50"
+			freql=(0.002 0.005 0.4 0.45)
+		elif [ "$SK1" -eq "1" ] && [ "$SK2" -eq "1" ] && [ "$SK3" -eq "1" ] && [ "$SK4" -eq "1" ]; then
+			DEC=1
+			MAX_DEP="50"
+			freql=(0.002 0.005 0.4 0.45)		
 		else
-			DEC=2
-			MAX_DEP="60"
-			freql=(0.005 0.008 0.8 0.9)
+			DEC=1
+			MAX_DEP="85"
+			freql=(0.002 0.005 0.4 0.45)
 		fi
 		
+		########################## Some Region-Based Exceptions for small EQs
+		
+		B11=`echo "$EVELA >= 33.0" | bc -l`
+		B12=`echo "$EVELA <= 35.5" | bc -l`
+		B13=`echo "$EVELO >= 47.0" | bc -l`
+		B14=`echo "$EVELO <= 49.0" | bc -l`	
+		
+		if (( `echo "$EVEMAG >= 4.3" | bc -l` )) && [ "$B11" -eq "1" ] && [ "$B12" -eq "1" ] && [ "$B13" -eq "1" ] && [ "$B14" -eq "1" ]; then
+			MAGLIM="$EVEMAG"
+		fi
+		
+		B21=`echo "$EVELA >= 30.0" | bc -l`
+		B22=`echo "$EVELA <= 33.0" | bc -l`
+		B23=`echo "$EVELO >= 48.0" | bc -l`
+		B24=`echo "$EVELO <= 52.0" | bc -l`	
+		
+		if (( `echo "$EVEMAG >= 4.3" | bc -l` )) && [ "$B21" -eq "1" ] && [ "$B22" -eq "1" ] && [ "$B23" -eq "1" ] && [ "$B24" -eq "1" ]; then
+			MAGLIM="$EVEMAG"
+		fi				
+			
+		B31=`echo "$EVELA >= 33.5" | bc -l`
+		B32=`echo "$EVELA <= 37.0" | bc -l`
+		B33=`echo "$EVELO >= 49.0" | bc -l`
+		B34=`echo "$EVELO <= 52.0" | bc -l`	
+		
+		if (( `echo "$EVEMAG >= 4.3" | bc -l` )) && [ "$B31" -eq "1" ] && [ "$B32" -eq "1" ] && [ "$B33" -eq "1" ] && [ "$B34" -eq "1" ]; then
+			MAGLIM="$EVEMAG"
+		fi				
+		
+		#########################	
 		# Event limits to be considered
 		C1=$(( `echo "$EVEMAG < $MAGLIM" | bc -l` ))
-		C2=$(( `echo "$EVE_DEP >= $MAX_DEP" | bc -l` )) 
-		
-		if [[ -n `grep -i "$Country" .EVE_INFO.txt` ]] || [[ -n `grep -i "Caspian Sea" .EVE_INFO.txt` ]]; then
+		C2=$(( `echo "$EVE_DEP >= $MAX_DEP" | bc -l` )) 	
+			
+		if [[ -n `grep -i "$Country" .EVE_INFO.txt` ]] || [[ -n `grep -i "Caspian Sea" .EVE_INFO.txt` ]] || [[ -n `grep -i "Oman Sea" .EVE_INFO.txt` ]] || [[ -n `grep -i "Persian Gulf" .EVE_INFO.txt` ]]; then
 			[ "$C1" -eq "1" ] && echo "Event ($EVID) is smaller than $MAGLIM. Ignored ..." && continue
 			[ "$C2" -eq "1" ] && echo "Event ($EVID) is located Deeper than our Greens Functions Depth limit. Ignored ... " && continue
 			echo -e "Processing EventID  #~~~~~~~~ $EVID ~~~~~~~~#"
@@ -88,26 +155,24 @@ GET_EVE_INFO ()
 			JD=`date -d "$EVE_DTE" +%j`
 			
 			# Setting Time window length based on MAX_DIS values in SOURCE_ANALYSIS script And the equation (0.36 * Dist) + 60  ...
-		
-			if (( `echo "$EVEMAG >= 4.00" | bc -l` )) && (( `echo "$EVEMAG < 4.60" | bc -l` )) ; then					
-				TINC=260
-			elif (( `echo "$EVEMAG >= 4.60" | bc -l` )) && (( `echo "$EVEMAG < 5.00" | bc -l` )) ; then							
-				TINC=280
+			
+			if (( `echo "$EVEMAG >= 4.0" | bc -l` )) && (( `echo "$EVEMAG < 5.00" | bc -l` )) ; then							
+				TINC=290
 			elif (( `echo "$EVEMAG >= 5.00" | bc -l` )) && (( `echo "$EVEMAG < 5.60" | bc -l` )) ; then							
-				TINC=310
+				TINC=320
 			elif (( `echo "$EVEMAG >= 5.60" | bc -l` )) && (( `echo "$EVEMAG < 6.00" | bc -l` )) ; then							
-				TINC=450
+				TINC=460
 			elif (( `echo "$EVEMAG >= 6.00" | bc -l` )) && (( `echo "$EVEMAG < 7.00" | bc -l` )) ; then						
-				TINC=560
+				TINC=570
 			else
-				TINC=600
+				TINC=610
 			fi			
 							
-			# Station selection based on stations used by sc3 for picking (stations with valid SNR)
-		
+			# Station selection based on stations used by sc3 for picking
+			
 			SL=`grep -win "Phase arrivals" .EVE_INFO.txt | cut -f 1 -d ":"` && L1=$(( SL + 2 ))
 			EL=`grep -win "Station magnitudes" .EVE_INFO.txt | cut -f 1 -d ":"` && L2=$(( EL - 2 ))
-			awk "NR >= $L1 && NR <= $L2 {print}" .EVE_INFO.txt | awk '{print $1}' > .selected_st.txt
+			awk "NR >= $L1 && NR <= $L2 {print}" .EVE_INFO.txt | awk '{print $1}' | uniq > .selected_st.txt
 			
 			
 			echo "################## STATIONS TO BE USED ##################"
@@ -121,18 +186,18 @@ GET_EVE_INFO ()
 							
 			TMAX=`date -d "$EVE_DTE $EVE_TME $TINC seconds" "+%Y-%m-%d %H:%M:%S"`
 			
-			[ ! -d "$DATA_PATH" ] && mkdir -p "$DATA_PATH" || rm -rf $DATA_PATH/* 2> /dev/null			
-			
+			[ ! -d "$DATA_PATH" ] && mkdir "$DATA_PATH" || rm -rf $DATA_PATH/* 2> /dev/null		
+			echo "$MAGLIM" > "$KIWI_HOME/.Mth.dat"
 			# JACKSEIS, Extract and Decimate the Data
 			cat .selected_st.txt | while read STA; do
-				[ `find $DATA/"$YEAR"/ -type f -name "*$STA*.D.$YEAR.$JD" | wc -l` -eq 0 ] && continue
+				[ `find $DATA/"$YEAR"/ -type f -name "*$STA*.D.$YEAR.$JD" | wc -l` -eq 0 ] && echo "$STA has no data" && sed -i "/$STA/d" .selected_st.txt	&& continue
 				find $DATA/"$YEAR"/ -type f -name "*$STA*.D.$YEAR.$JD" | xargs jackseis --tmin="$EVE_DTE $EVE_TME" \
 				--tmax="$TMAX" --downsample="$DEC" --debug --output-dir="$DATA_PATH" --output-format="sac" --output=%n.%s.%l.%c.SAC 2> /dev/null
 			done
-			[ `ls $DATA_PATH/*SAC 2> /dev/null | wc -l` -eq "0" ] && echo "No data available for $EVID event" && continue
 			
+			[ `ls $DATA_PATH/*SAC 2> /dev/null | wc -l` -eq "0" ] && echo "No data available for $EVID event" && continue
 			mkdir "$DATA_PATH"/DISP 
-			cp .selected_st.txt $DATA_PATH/DISP/.stations.dat
+			cp .selected_st.txt	$DATA_PATH/DISP/.stations.dat
 			
 			# Deconvolution process
 			echo -e "\nProgram started Deconvolution Process."
@@ -159,7 +224,7 @@ GET_EVE_INFO ()
 			echo "Deconvolution Process Finished."
 			cd  -
 			
-			if [ `ls $DATA_PATH/DISP/DISPL* | wc -l` -ge "12" ]; then 
+			if [ `ls $DATA_PATH/DISP/DISPL* | wc -l` -ge "$Data_Lim" ]; then 
 				echo "$EVID Data is Ready to be Processed."
 				echo "${DATA_PATH##*/}" >> .ready_data
 			else
