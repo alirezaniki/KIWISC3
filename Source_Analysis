@@ -710,6 +710,40 @@ MAP ()
 	echo -e "\n"
 }	
 
+relative_misfit ()
+{
+	unset SL
+	misfit=`grep -w "3 8 10 0 0 5" step1.earthquakeinfo.dat | cut -f 7 -d " "`
+	for item in dip rak str; do
+		cat step1."$item"_mis.dat | while read line; do
+			a=`echo $line | cut -f 1 -d " "`
+			b=`echo $line | cut -f 2 -d " "` && b=`printf "%.6f" $b`
+			echo $a $b 
+		done > step1."$item"_mis_2.dat
+		
+		v0=`cat step1."$item"_mis_2.dat | cut -f 1 -d " " | head -1`
+		v0M=`cat step1."$item"_mis_2.dat | cut -f 2 -d " " | head -1` && v0M=`printf "%.6f" $v0M`
+		unset v1M
+		unset v2M
+		while read val; do
+			vl=`echo $val | cut -f 1 -d " "`
+			if (( `echo "$vl >= $v0" | bc -l` )); then
+				if [[ -z "$v1M" ]]; then
+					v1M=`echo $val | cut -f 2 -d " "` && v1M=`printf "%.6f" $v1M`
+				fi
+			else		
+				if [[ -z "$v2M" ]]; then
+					v2M=`echo $val | cut -f 2 -d " "` && v2M=`printf "%.6f" $v2M`
+				fi
+			fi		
+			[[ -n "$v1M" ]] && [[ -n "$v2M" ]] && break
+		done < <(cat step1."$item"_mis_2.dat | sort -n -r -k 2)
+		SL+=(`echo "0.5 * ($v1M + $v2M)" | bc -l`) 
+	done
+	S=`echo "0.33 * (${SL[0]} + ${SL[1]} + ${SL[2]})" | bc -l`
+	Q=`echo "(1 - $misfit) + $S" | bc -l`
+	echo ${EV_RES##*/} $Q >> ../quality.dat
+}
 
 MW_EVALUATION () 
 {
@@ -787,14 +821,14 @@ PROCESS ()
 	cd ../
 	
 	
-	for EV_RES in `ls -d -1 $RESULTS/$EVENT/*`; do
-		[ ! -f  $EV_RES/step1.earthquakeinfo.dat ] && continue
-		MF=`grep "3 8 10 0 0" $EV_RES/step1.earthquakeinfo.dat 2> /dev/null | cut -f 7 -d " "`
-		echo "$EV_RES $MF" 
-	done > .eve_summ       # >> Best BP Filter
+	for EV_RES in `ls -d -1 $RESULTS/$EVENT/0*`; do
+		cd $EV_RES
+		[[ ! -f step1.earthquakeinfo.dat ]] && continue
+		relative_misfit
+		cd $KIWI
+	done	
 	
-	
-	BEST_F=`cat .eve_summ | sort -n -k 2 | awk '{print $1}' | awk -F "/" '{print $NF}' | head -1`
+	BEST_F=`sort -n -r -k 2 $RESULTS/$EVENT/quality.dat | cut -f 1 -d " " | head -1`
 	F1=`echo $BEST_F | cut -f 1 -d "-"`
 	F2=`echo $BEST_F | cut -f 2 -d "-"`
 	read -a FILTER <<< "$F1 $F1 $F2 $F2"
@@ -807,14 +841,13 @@ PROCESS ()
 	sed -i "/INVERSION_DIR/c\INVERSION_DIR   $RESULTS/$EVENT/${FILTER[1]}-${FILTER[2]}_Check_WS" $File 2> /dev/null
 	./rapidinv $File
 	cp $File `grep -w "INVERSION_DIR" $File | awk '{print $2}'`	
-	cd -
 	
-	for EV_RES in `ls -d -1 $RESULTS/$EVENT/*$F1-$F2*`; do
-		MF=`grep "3 8 10 0 0" $EV_RES/step1.earthquakeinfo.dat 2> /dev/null | cut -f 7 -d " "`
-		echo "$EV_RES $MF" 
-	done > .eve_summ    # >> Best W_S for the best BP Filter
+	EV_RES="$RESULTS/$EVENT/${FILTER[1]}-${FILTER[2]}_Check_WS"
+	cd $EV_RES
+	[[ -f step1.earthquakeinfo.dat ]] && relative_misfit 
+	cd $KIWI
 	
-	BEST_DIR=`cat .eve_summ | sort -n -k 2 | cut -f 1 -d " " | head -1`
+	BEST_DIR="$RESULTS/$EVENT/`sort -n -r -k 2 $RESULTS/$EVENT/quality.dat | cut -f 1 -d " " | head -1`"
 	MF1=`grep -w "3 8 10 0 0 5" $BEST_DIR/step1.earthquakeinfo.dat | cut -f 7 -d " "`
 	W_S=`grep -w "WIN_START_A_ST1" $BEST_DIR/$File | awk '{print $2}'`
 	W_T=`grep -w "WIN_TAPER_A_ST1" $BEST_DIR/$File | awk '{print $2}'`
