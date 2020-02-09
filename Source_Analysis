@@ -30,6 +30,7 @@ export FULLMT="False"
 export LEVEL_S2N="0.85"
 export NOISE_WINDOW="after"
 export EVALUATE_MW="yes"
+export MAX_MIS="B"
 }
 
 
@@ -650,7 +651,6 @@ MAP ()
 	(( `echo "$RN < 0" | bc -l` )) && RNM=S && RN=`echo "$RN * -1" | bc -l` || RNM=N
 	(( `echo "$RE < 0" | bc -l` )) && REM=W && RE=`echo "$RE * -1" | bc -l` || REM=E
 	
-	echo "$LON $LAT ${DP%km*} $S1 $D1 $R1 $Mw $LON $LAT" >> $KIWI/RESULTS/SUMMARY/Map-All/info
 		
 	gmt pstext -X16.2 -Y6.0 -JX10/7 -R0/14/0/32 -K -O 2> /dev/null <<- END >> $RESULTS/SUMMARY/"$EVENT".ps	
 	0 30 13 0 0 5 Epicenter 
@@ -702,10 +702,28 @@ MAP ()
 	duM=`echo "scale=0; $duS / 60" | bc -l`
 	mv $RESULTS/SUMMARY/"$EVENT".ps	$RESULTS/SUMMARY/"$EVENT"-"$duM".ps	
 	
-	rm ./gmt.history 2> /dev/null
-	[ "$SMB_BK" = "True" ] && SMB_BK
-	cd $KIWI/RESULTS/SUMMARY/Map-All
-	bash ./RUN
+	m1=`grep -w "3 8 10 0 0 5" step1.earthquakeinfo.dat | cut -f 7 -d " "`
+	m2=`grep -w "3 8 10 0 0 5" step2.earthquakeinfo.dat | cut -f 7 -d " "`
+	
+	if (( `echo "$m1 <= 0.45" | bc -l` )) && (( `echo "$m2 <= 0.9" | bc -l` )); then
+		Q="A"
+	elif (( `echo "$m1 <= 0.5" | bc -l` )) && (( `echo "$m2 <= 1.05" | bc -l` )); then
+		Q="B"
+	elif (( `echo "$m1 <= 0.6" | bc -l` )) && (( `echo "$m2 <= 1.2" | bc -l` )); then
+		Q="C"	
+	else
+		Q="D"
+	fi	
+	
+	if [[ "$Q" < "$MAX_MIS" ]] || [[ "$Q" == "$MAX_MIS" ]]; then
+		echo "$LON $LAT ${DP%km*} $S1 $D1 $R1 $Mw $LON $LAT" >> $KIWI/RESULTS/SUMMARY/Map-All/info
+		rm ./gmt.history 2> /dev/null
+		[ "$SMB_BK" = "True" ] && SMB_BK
+		cd $KIWI/RESULTS/SUMMARY/Map-All
+		bash ./RUN
+	else
+		echo "The final quality is $Q, Not reporting!" > ../Report.dat
+	fi	
 	cd $KIWI
 	echo -e "\n"
 }	
