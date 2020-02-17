@@ -696,9 +696,9 @@ MAP ()
 	
 	DAte=`date -u +"%Y-%m-%d %H:%M:%S" | cut -f 1 -d " "`
 	TIme=`date -u +"%Y-%m-%d %H:%M:%S" | cut -f 2 -d " "`
-	D2=`date -d "$DAte $TIme" +%s`
-	D1=`date -d "$DATE $TIME" +%s`
-	duS=`echo "$D2 - $D1" | bc -l`
+	d2=`date -d "$DAte $TIme" +%s`
+	d1=`date -d "$DATE $TIME" +%s`
+	duS=`echo "$d2 - $d1" | bc -l`
 	duM=`echo "scale=0; $duS / 60" | bc -l`
 	mv $RESULTS/SUMMARY/"$EVENT".ps	$RESULTS/SUMMARY/"$EVENT"-"$duM".ps	
 	
