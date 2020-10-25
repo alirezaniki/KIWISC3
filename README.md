@@ -1,3 +1,10 @@
+Publication
+------------
+
+Towards a regional, automated full moment tensor inversion for medium to large magnitude events in the Iranian plateau (doi: 10.1007/s10950-020-09967-8)
+
+https://rdcu.be/b87AN
+
 KIWISC3
 ------
 A Bash code to link Seiscomp3 and KIWI tools for automatic (Online) source analysis.
