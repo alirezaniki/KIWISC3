@@ -46,8 +46,3 @@ Notes
 - Read the README file in RESULTS/SUMMARY/Map_All dir.
 
 This Readme file is incomplete. Contact me for more details.
-
-Publication
---------------
-Niksejel, A., Shomali, Z.H., Cesca, S. & Moradi, A., 2020. Towards a regional, automated moment tensor inversion for
-medium to large magnitude events in the Iranian plateau. Journal of Seismology
